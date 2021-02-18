@@ -1,0 +1,6 @@
+-n 10 -m 11 -s 'ciao mondo'
+-n 10 -h
+-n 10 -k 12
+----n 10 -s-s 'ciao mondo'
+-n10 -m11 -s'ciao mondo'
+-n -m 11

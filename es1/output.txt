@@ -1,0 +1,21 @@
+// These are the desired outputs for getoptlike.c's executable
+// if given the inputs in input.txt
+-n: 10
+-m: 11
+-s: ciao mondo
+
+HELP
+Usage: ./getoptlike.out [-n|-m|-s|-h] [argument]
+
+-n: 10
+-k: Opzione non riconosciuta
+
+-n: 10
+-s: -s
+
+-n: 10
+-m: 11
+-s: ciao mondo
+
+-n: No values provided!
+-m: 11
