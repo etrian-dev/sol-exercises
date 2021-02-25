@@ -3,11 +3,14 @@
 #include <ctype.h> // toupper
 #include <string.h>
 
-void strtoupper(char *in, size_t len, char *out) {
+void strtoupper(const char *in, size_t len, char *out) {
 	unsigned int i;
 	for(i = 0; i < len; i++) {
 		out[i] = toupper(in[i]);
 	}
+	// non è indispensabile per via della calloc, ma non deve dipendere da come ho allocato
+	// memoria
+	out[len] = '\0';
 }
 
 int main(int argc, char **argv) {

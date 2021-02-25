@@ -12,7 +12,7 @@ void RIALLOCA(char **buf, size_t newsize)
 	char *newbuf = realloc(*buf, newsize);
 	if (!newbuf)
 	{
-		puts("Memory cannot be alloc'd");
+		puts("Memory cannot be realloc'd");
 		exit(EXIT_FAILURE);
 	}
 	*buf = newbuf;
