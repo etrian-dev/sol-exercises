@@ -2,17 +2,23 @@
 #include <stdlib.h>
 
 #define dimN 16
-#define dimM 7
+#define dimM 8
 
 // macro che prende due argomenti: un puntatore ptr ed una stringa s
 // se ptr == NULL, stampa s con perror ed esce (EXIT_FAILURE)
-#define CHECK_PTR(ptr, s) 		\
+// se ptr != NULL stampa il successo della malloc
+#define CHECK_PTR_EXIT(ptr, s) 	\
 	if((ptr) == NULL) {			\
 		perror((s));			\
 		exit(EXIT_FAILURE);		\
+	}							\
+	else {						\
+		perror((s));			\
 	}
 
-// macro che ritorna l'elemento alla riga i e colonna j della matrice matr
+// macro che ritorna l'elemento matr[i][j]
+// Dal momento che la matrice è allocata come un unico array per righe e conosco
+// la dimensione delle righe a tempo di compilazione, posso usare la seguente formula
 #define ELEM(matr, i, j) *((matr) + (i) * dimM + (j))
 
 #define MSG "Stampo la matrice M"
@@ -32,7 +38,7 @@ int main() {
 	// alloca una matrice di long ints di dimensioni dimN x dimM
 	long *M = malloc(dimN * dimM * sizeof(long));
 	// controlla che la malloc non abbia fallito
-    CHECK_PTR(M, "malloc"); 
+    CHECK_PTR_EXIT(M, "malloc"); 
     
     for(size_t i=0;i<dimN;++i)
 		for(size_t j=0;j<dimM;++j)			
