@@ -9,10 +9,9 @@
 #include <stdlib.h>
 
 // Tutte le opzioni che getopt deve riconoscere (a parte -h) ':' se con attributo
-#define GETOPT_STR "n:m:o:"
+#define GETOPT_STR ":n:m:o"
 
 // definisce opzioni di help ed il messaggio da stampare
-#define HELP_STR "hH"
 #define HELP_MSG "Usage: nome-programma -n <num. intero> -m <num. intero> -o <stringa> -h"
 
 // funzione di utilità per determinare se la stringa *s possa essere convertita in intero
@@ -32,8 +31,8 @@ int main(int argc, char **argv) {
     opterr = 0;
     // Cerco opzione help negli argomenti: se la trovo stampo messaggio e termino prog
     do {
-        option = getopt(argc, argv, HELP_STR);
-        if(strchr(HELP_STR, option) != NULL) {
+        option = getopt(argc, argv, "h");
+        if(option == 'h') {
             puts(HELP_MSG);
             return EXIT_SUCCESS;
         }
@@ -67,6 +66,11 @@ int main(int argc, char **argv) {
         case 'o':
             printf("-%c: %s\n", option, optarg);
             break;
+        case ':':
+        	printf("Opzione %c richiede un argomento\n", optopt);
+        	break;
+        case '?':
+        	printf("Opzione %c non riconosciuta\n", optopt);	
         }
     } while(option != -1);
 

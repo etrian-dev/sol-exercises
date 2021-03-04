@@ -31,6 +31,7 @@ int somma(int x) {
 	return accumulator + INIT_VALUE;
 }
 
+// versione rientrante della funzione precedente (lo stato è mantenuto nella var. puntatore)
 int somma_r(int x, int *accum) {
 	*accum += x;
 	return *accum;

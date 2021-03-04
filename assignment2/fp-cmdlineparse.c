@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 // Tutte le opzioni che getopt deve riconoscere (a parte -h) ':' se con attributo
-#define GETOPT_STR ":n:m:o:h"
+#define GETOPT_STR ":n:m:oh"
 // definisce messaggio di uso
 #define HELP_MSG "Usage: %s -n <num. intero> -m <num. intero> -o <stringa> -h\n"
 

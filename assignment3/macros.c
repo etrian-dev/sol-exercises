@@ -11,9 +11,6 @@
 	if((ptr) == NULL) {			\
 		perror((s));			\
 		exit(EXIT_FAILURE);		\
-	}							\
-	else {						\
-		perror((s));			\
 	}
 
 // macro che ritorna l'elemento matr[i][j]
@@ -38,14 +35,16 @@ int main() {
 	// alloca una matrice di long ints di dimensioni dimN x dimM
 	long *M = malloc(dimN * dimM * sizeof(long));
 	// controlla che la malloc non abbia fallito
-    CHECK_PTR_EXIT(M, "malloc"); 
-    
-    for(size_t i=0;i<dimN;++i)
-		for(size_t j=0;j<dimM;++j)			
-	    	ELEM(M,i,j) = i+j;    
-    
+    CHECK_PTR_EXIT(M, "malloc");
+
+    for(size_t i=0;i<dimN;++i) {
+			for(size_t j=0;j<dimM;++j) {
+	    	ELEM(M,i,j) = i+j;
+			}
+		}
+		// stamp
     PRINTMAT(M, dimN, dimM);
-    
+
     free(M);
     return 0;
 }

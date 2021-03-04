@@ -13,3 +13,8 @@ tenuto durante l'A.A. 2020-2021
   * semantically the same as the previous, but with function pointers
   * reentrant tokenizer on 2 strings, using strtok_r
   * generation of random numbers within a range + statistics
+* [third assignment](./assignment3)
+  * static/dynamic libraries (libtokenizer)
+  * macros for matrices
+  * suffix sum (both non-reentrant and reentrant)
+  * use of extern to define things without including headers
