@@ -18,3 +18,7 @@ tenuto durante l'A.A. 2020-2021
   * macros for matrices
   * suffix sum (both non-reentrant and reentrant)
   * use of extern to define things without including headers
+* [fourth assignment](./assignment4)
+  * lists usernames in /etc/passwd
+  * writes a matrix to text and binary files. Another program compares the results
+  * A simplifed version of the wc command (options -w and -l)
