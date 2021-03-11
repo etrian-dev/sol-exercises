@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	long int n = 0;
 	if (isNumber(argv[3], &n) != 0)
 	{
-		printf("Sorry, %s is not a valid dimension", argv[3]);
+		printf("Sorry, %s is not a valid matrix dimension", argv[3]);
 		exit(EXIT_FAILURE);
 	}
 	// Open the files passed as arguments
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	float *m2 = calloc(n * n, sizeof(float));
 	if (!(m1 && m2))
 	{
-		perror("Alloc of m1 or m2 failed");
+		perror("Calloc of matrices m1 or m2 failed");
 		// close the files before exiting
 		fclose(in_ascii);
 		fclose(in_bin);
@@ -79,7 +79,10 @@ int main(int argc, char **argv)
 
 // debug print
 #if defined(DEBUG)
-			printf("read %f into m1[%lu][%lu]\nread %f into m2[%lu][%lu]\n", *(m1 + i * n + j), i, j, *(m2 + i * n + j), i, j);
+			printf(
+				"read %f into m1[%lu][%lu]\n"
+				"read %f into m2[%lu][%lu]\n",
+				*(m1 + i * n + j), i, j, *(m2 + i * n + j), i, j);
 #endif
 		}
 	}

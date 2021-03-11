@@ -8,7 +8,7 @@
 #include <errno.h>
 
 // defines a maximum value for the matrix dimension
-#define MAX_N 512
+#define MAX_N 1024
 #define BIN_FILE "mat_dump.dat"
 #define TEXT_FILE "mat_dump.txt"
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 #endif
 
       // write data on the text file
-      fprintf(ascii_out, "%f ", *(mat + i * n + j));
+      fprintf(ascii_out, "%f\n", *(mat + i * n + j));
       // write data on the binary file
       fwrite(mat + i * n + j, sizeof(float), 1, bin_out);
     }
