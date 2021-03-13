@@ -15,8 +15,9 @@ CC = gcc
 CFLAGS = -Wall -pedantic -std=c99 -O0 -g -I ./$(DIR3)
 
 #these are the phony targets
-.PHONY: clean test all
+.PHONY: cleanall clean test all
 
+#phony target to make all subdirectories of the project
 all: $(DIR1)/$(ES1) $(DIR2)/$(ES2-1) $(DIR2)/$(ES2-2) $(DIR3)/$(ES3)
 
 #compile object files into executables
@@ -36,9 +37,13 @@ $(DIR2)/read-cmp-matr.o: $(DIR2)/read-cmp-matr.c
 $(DIR3)/simple-wc.o: $(DIR3)/simple-wc.c $(DIR3)/parse-opt.h
 $(DIR3)/parse-opt.o: $(DIR3)/parse-opt.c $(DIR3)/parse-opt.h
 
+cleanall: clean
+	cd $(DIR1) && $(MAKE) cleanall
+	cd $(DIR2) && $(MAKE) cleanall
+	cd $(DIR3) && $(MAKE) cleanall
 clean:
 	cd $(DIR1) && $(MAKE) clean
-	cd $(DIR2) && $(MAKE) cleanall
+	cd $(DIR2) && $(MAKE) clean
 	cd $(DIR3) && $(MAKE) clean
 test: all
 	cd $(DIR1) && $(MAKE) test

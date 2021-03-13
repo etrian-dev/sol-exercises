@@ -2,20 +2,23 @@
 // Per il formato di /ect/passwd vedere man 5 passwd
 // Il nome del file in cui scrivere viene passato come argomento al programma
 
-// command to check for errors
-// ./write-passwd.out usernames.txt; cut -d ':' -f 1 /etc/passwd | diff - usernames.txt
+/* Command to compare the output to the right one (see man cut for infos)
+ * Shouldn't output anything on success
+ * ./write-passwd.out usernames.txt; cut -d ':' -f 1 /etc/passwd | diff - usernames.txt
+ */
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 // The input file is the one defined below
 #define PWD_FILE "/etc/passwd"
-// assuming no username is longer than 1024
+// assuming any line is shorter than MAX_LINE_SZ-1 characters
 #define MAX_LINE_SZ 1024
-// just an error logging string
+// just an error logging macro
 #define ERROR_STR(file, ln, tm) "Error at\nfile: (file)\nline: (ln)\ntime: (tm)"
 
-// This program reads PWD_FILE and prints the first field in the file provided
+// This program reads PWD_FILE and writes the first field (delimited by ':')
+// in the file provided as an argument
 int main(int argc, char **argv) {
   if(argc != 2) {
     printf("Usage: %s [outfile]\n", argv[0]);
@@ -34,11 +37,12 @@ int main(int argc, char **argv) {
       return EXIT_FAILURE;
     }
 
-    // read the file line by line and parse the line
+    // read the file line by line (using a fixed buffer) and parse the line
     char line[MAX_LINE_SZ];
     char *delim = NULL;
     while(fgets(line, MAX_LINE_SZ, pwd_file) != NULL) {
-      // the first field is delimited by a colon, thus the username terminates the char before that
+      // the first field is delimited by a colon, thus the username 
+      // terminates the character before that
       delim = strchr(line, ':');
       if(!delim) {
         puts(ERROR_STR(__FILE__, __LINE__, __TIME__));
@@ -48,11 +52,9 @@ int main(int argc, char **argv) {
       size_t pos = delim - line;
       line[pos] = '\0';
       // then write the username to the output file
-      // the line above implies that the line is printed until the terminator
+      // the line above implies that printf stops at the string terminator
+      // this is useful because then the buffer needn't be resetted after each read
       fprintf(out_file, "%s\n", line);
-
-      // then the line buffer needs to be resetted to read the next
-      //memset(line, 0, sizeof(char) * MAX_LINE_SZ);
     }
 
     // all the reading & writing done, files must be closed before exiting

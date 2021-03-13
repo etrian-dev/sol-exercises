@@ -11,6 +11,7 @@ test: $(EXE)
 	@-diff -y myout.txt correct.txt
 	@rm myout.txt correct.txt
 	@echo "Test passed"
-	
 clean:
-	-rm ./*.o ./*.out ./*.txt
+	-rm ./*.out
+cleanall: clean
+	-rm ./*.o ./*.txt

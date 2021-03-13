@@ -1,12 +1,17 @@
 EXE = write-passwd.out
-OUTFILE = usernames.txt
+OUTFILE = output.txt
 
-.PHONY: clean test
-#tests the program by dumping the results in OUTFILE and displaying it
+.PHONY: cleanall clean test
+
+#tests the program by running it and then comparing the result with the given command
 test: $(EXE)
-	@echo "Testing $(EXE), output in $(OUTFILE)"
+	@echo "Testing $(EXE)..."
 	@./$(EXE) $(OUTFILE)
+	@./$(EXE) $(OUTFILE)
+	@cut -d ':' -f 1 /etc/passwd | diff - $(OUTFILE)
+	@rm $(OUTFILE)
 	@echo "Test passed"
-
 clean:
-	-rm ./*.o ./*.out ./*.txt
+	-rm ./*.out
+cleanall: clean
+	-rm ./*.o ./*.txt

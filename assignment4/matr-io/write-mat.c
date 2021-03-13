@@ -1,6 +1,8 @@
-// A matrix of floats is initialized and written both in a binary file and text file
-// The binary output file is mat_dump.dat
-// The text output file is mat_dump.txt
+/* A square matrix of floats, whose dimension is specified as the only argument,
+ * is alloc'd, initialized and written both to a binary file and text file
+ * The binary output file is mat_dump.dat
+ * The text output file is mat_dump.txt
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -8,7 +10,8 @@
 #include <errno.h>
 
 // defines a maximum value for the matrix dimension
-#define MAX_N 1024
+#define MAX_N 256
+// defines the files to be written
 #define BIN_FILE "mat_dump.dat"
 #define TEXT_FILE "mat_dump.txt"
 
@@ -18,21 +21,25 @@
 //	2: overflow/underflow
 int isNumber(const char *s, long *n);
 
+// The program receives as a parameter the size of the matrix
+// and dumps a matrix to the files specified above
 int main(int argc, char **argv)
 {
+  // not the right amount of args => usage message
   if (argc != 2)
   {
     printf("Usage: %s <mat dimension>\n", argv[0]);
     return 1;
   }
+  // check if the size is actually a positive integer (less than MAX_N)
   long int n = 0;
   if (isNumber(argv[1], &n) != 0 || n > MAX_N || n <= 0)
   {
-    printf("Sorry, the parameter n must be positive and less than %u\n", MAX_N);
+    printf("The parameter n must be an integer in the range [1,%u]\n", MAX_N);
     exit(EXIT_FAILURE);
   }
 
-  // malloc a square matrix of floats in a contiguous area of dimension n x n
+  // alloc a square matrix of floats in a (contiguous, by row)
   float *mat = calloc(n * n, sizeof(float));
   if (!mat)
   {
@@ -45,7 +52,7 @@ int main(int argc, char **argv)
   {
     for (j = 0; j < n; j++)
     {
-      *(mat + i * n + j) = 2 * i + 7 * j;
+      *(mat + i * n + j) = (i + j) / 2.0;
     }
   }
   // open output files
@@ -68,15 +75,13 @@ int main(int argc, char **argv)
   {
     for (j = 0; j < n; j++)
     {
-// debug macro
-#if defined(DEBUG)
-      printf("mat[%d][%d] = %f\n", i, j, *(mat + i * n + j));
-#endif
-
-      // write data on the text file
       fprintf(ascii_out, "%f\n", *(mat + i * n + j));
-      // write data on the binary file
       fwrite(mat + i * n + j, sizeof(float), 1, bin_out);
+      
+      // debug macro
+	  #if defined(DEBUG)
+      printf("mat[%d][%d] = %f\n", i, j, *(mat + i * n + j));
+      #endif
     }
   }
 

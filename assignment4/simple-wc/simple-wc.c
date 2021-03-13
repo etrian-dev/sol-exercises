@@ -66,8 +66,9 @@ int main(int argc, char **argv) {
 		n_words = 0;
 		n_lines = 0;
 		int word_longer_than_BUFSZ = 0; // this should be self-explanatory, but...
-		// when counting words a line/word might span across different reads
-		// and thus this is needed to keep track of words unfinished in the previous buffer
+		// when counting words a word might be longer than the buffer size or span
+		// across multiple reads. This flag keeps track of these situations, based
+		// on the output of process_buf()
 
 		char *line = calloc(BUFSZ, sizeof(char));
 		if(!line) {
@@ -75,33 +76,48 @@ int main(int argc, char **argv) {
 			exit(EXIT_FAILURE);
 		}
 
+		int word_continue = 0;
 		// while EOF is not reached, read up to BUFSZ characters and process that buffer
 		while(feof(ifile) == 0) {
 			char *s = fgets(line, BUFSZ, ifile);
+			// if fgets returned NULL and EOF hasn't been reached, then there was an
+			// error during the call to fgets
 			if(!s && feof(ifile) == 0) {
 				perror("Error reading data from file. (__FILE__:__LINE__)");
 				exit(EXIT_FAILURE);
 			}
-			// 1 -> word/line not ended by this buffer
-			// 0 -> buffer finishes with a '\n' (last non-NULL character)
-			int return_code = process_buf(line, &n_lines, &n_words);
-			// if the previous buffer(s) did not end the word and this did,
+			
+			// word_continue == 1 -> word/line not ended in this buffer
+			// word_continue == 0 -> buffer finishes with a '\n' (last char before the string terminator)
+			word_continue = process_buf(line, &n_lines, &n_words);
+			
+			#ifdef DEBUG
+			printf("process_buf returned %d\nword_longer is %d\n", word_continue, word_longer_than_BUFSZ);
+			#endif
+			
+			// if the previous buffer(s) did not end the word and this read did
 			// then add one word to the count
-			if(word_longer_than_BUFSZ == 1 && return_code == 0) {
+			if(word_longer_than_BUFSZ == 1 && word_continue == 0) {
 				n_words++;
 			}
-			// this buffer didn't end the line, so turn the flag ON
-			else if(word_longer_than_BUFSZ == 0 && return_code == 1) {
+			// this buffer read didn't end the line, so turn the flag ON
+			else if(!word_longer_than_BUFSZ && word_continue) {
 				word_longer_than_BUFSZ = 1;
 			}
 
 			#ifdef DEBUG // print a summary up to this iteration on the file
-			printf("#lines = %ld\n#words = %ld\n", n_lines, n_words);
+			printf("[%s] #lines = %ld\n#words = %ld\n", argv[i], n_lines, n_words);
 			#endif
 
 			// reset the line to zeros
 			line = memset(line, 0, BUFSZ * sizeof(char));
 		}
+		// if the last buffer did not end in '\n' => add a word
+		// or this buffer ended the word => add a word
+		if(word_continue == 1 || (word_longer_than_BUFSZ == 1 && word_continue == 0)) {
+			n_words++;
+		}
+		
 		// file processed: update the totals and print a summary of the file
 		tot_lines += n_lines;
 		tot_words += n_words;
@@ -118,7 +134,7 @@ int main(int argc, char **argv) {
 		printf("%s\n", argv[i]);
 
 		#ifdef DEBUG // print an annotated summary
-		printf("#lines in %s: %ld\n#words in %s: %ld\n", tot_lines, tot_words);
+		printf("#lines in %s: %ld\n#words in %s: %ld\n", argv[i], tot_lines, argv[i], tot_words);
 		#endif
 
 		// close the file & free the buffer

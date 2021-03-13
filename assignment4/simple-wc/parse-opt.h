@@ -3,9 +3,11 @@
 #define PARSE_OPT_H
 
 // declarations because c99 gets bitchy
+#if __STDC_VERSION__ <= 199901L
 int getopt(int argc, char **argv, const char *opstring);
 extern int optind;
 extern int opterr;
+#endif
 
 // recognized options are -w and -l (no arguments)
 #define OPSTRING "wl"
