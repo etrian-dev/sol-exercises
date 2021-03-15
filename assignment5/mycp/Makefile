@@ -34,7 +34,7 @@ cleanall: clean
 	-rm $(OBJS)/*.o ./output/* ./memcheck.log
 test: $(SYSCALL_CP)
 	@echo "Testing $(SYSCALL_CP) and $(LIBC_CP)"
-	@/bin/sh -e test.sh ./$(SYSCALL_CP) $(LIBC_CP)
+	@/bin/bash -e test.sh ./$(SYSCALL_CP) $(LIBC_CP)
 	@echo "Test passed"
 memcheck: $(SYSCALL_CP)
 	@echo "Memory checking with valgrind on $(SYSCALL_CP) and $(LIBC_CP)"

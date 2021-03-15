@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #choose the buffer size
 read -p "Buffer size: " bufsz
 # $1 is the executable using system calls
