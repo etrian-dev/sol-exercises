@@ -4,6 +4,6 @@
 
 # read the directory to search from and then the pattern to be searched
 read -r -e -p "Source dir: " source
-read -r -e -p "Pattern: " pat
+read -r -e -p "Filename: " pat
 $1 $source $pat # pattern is quoted just to be safe
 # outputs various information about files matching pat (descends recursively in subdirs)

@@ -22,3 +22,7 @@ tenuto durante l'A.A. 2020-2021
   * lists usernames in /etc/passwd
   * writes a matrix to text and binary files. Another program compares the results
   * A simplifed version of the wc command (options -w and -l)
+* [fifth assignment](./assignment5)
+  * a clone of the cp command. One version uses syscalls and the other libc calls
+  * a very simple clone of the find command, using libc calls for directories
+  * a very simple clone of the ls command, using libc calls for directories

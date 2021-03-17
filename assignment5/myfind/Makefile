@@ -5,37 +5,39 @@ CFLAGS = -std=c99 -pedantic -Wall -g
 DBFLAGS = -DDEBUG=1
 
 EXE = bin/myfind.out
+DBG = bin/myfind-dbg.out
 SRC = src
 OBJS = objs
+HEADERS = -I ./headers
 
-.PHONY: all debug clean cleanall test testdbg
+.PHONY: all dbg clean cleanall test testdbg
+
 
 all: $(EXE)
 
-debug: $(EXE)-dbg
+$(EXE): $(OBJS)/myfind.o $(OBJS)/utilities.o $(OBJS)/explore-dir.o
+	$(CC) $(CFLAGS) $(HEADERS) -o $@ $^
 
-$(EXE): $(OBJS)/myfind.o
-	$(CC) $(CFLAGS) -o $@ $<
+$(OBJS)/%.o: $(SRC)/%.c
+	$(CC) $(CFLAGS) $(HEADERS) -c -o $@ $<
 
-$(EXE)-dbg: $(OBJS)/myfind-dbg.o
-	$(CC) $(CFLAGS) -o $@ $<
+dbg: $(DBG)
+
+$(DBG): $(wildcard $(SRC)/*.c)
+	$(CC) $(CFLAGS) $(HEADERS) $(DBFLAGS) -o $@ $^
+
 	
-$(OBJS)/myfind.o: $(SRC)/myfind.c
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(OBJS)/myfind-dbg.o: $(SRC)/myfind.c
-	$(CC) $(CFLAGS) $(DBFLAGS) -c -o $@ $<
 clean:
 	-rm ./bin/*.out
 cleanall: clean
-	-rm $(OBJS)/*.o ./memcheck.log
+	-rm $(wildcard $(OBJS)/*.o)
 test: $(EXE)
 	@echo "Testing $(EXE)"
 	@/bin/bash -e test.sh ./$(EXE) 
 	@echo "Test passed"
-testdbg: $(EXE)-dbg
-	@echo "Debug test $(EXE)-dbg"
-	@/bin/bash -e test.sh ./$(EXE)-dbg 
+testdbg: $(DBG)
+	@echo "Debug test $(DBG)"
+	@/bin/bash -e test.sh ./$(DBG)
 	@echo "Test passed"
 #memcheck: $(EXE)
 #	@echo "Memory checking with valgrind on $(EXE) and "
