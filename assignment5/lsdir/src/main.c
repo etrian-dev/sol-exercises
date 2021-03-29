@@ -27,26 +27,10 @@ int main(int argc, char **argv) {
 		printf("%s %s\n", argv[0], argv[1]);
 		#endif
 		
-		char *abspath = argv[1];
-		int to_free = 0;
-		// if argv[1] is not an absolute path, then obtain it
-		if(argv[1][0] != '/') {
-			abspath = get_abspath(argv[1]);
-			to_free = 1; // abspath is malloc'd => needs to be freed
-		}
-		
-		#ifdef DEBUG
-		printf("Abs directory path: %s\n", abspath);
-		#endif
-		
 		// explore the directory tree rooted at abspath for files matching argv[2]
-		int status = lsdir(abspath);
+		int status = lsdir(argv[1]);
 		// print the appropriate error message it some error occurred
 		err_report(status, argv[1]);
-		
-		if(to_free == 1) {
-			free(abspath);
-		}
 	}
 	return EXIT_SUCCESS;
 }

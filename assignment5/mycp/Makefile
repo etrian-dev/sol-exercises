@@ -18,13 +18,10 @@ $(SYSCALL_CP): $(OBJS)/mycp-sys.o
 
 db-$(SYSCALL_CP): $(OBJS)/mycp-sys.o
 	$(CC) $(CFLAGS) $(DBFLAGS) -o $@ $<
-	
 $(LIBC_CP): $(OBJS)/mycp-libc.o
 	$(CC) $(CFLAGS) -o $@ $<
-	
 $(OBJS)/mycp-sys.o: $(SRC)/mycp-sys.c
 	$(CC) $(CFLAGS) -c -o $@ $<
-	
 $(OBJS)/mycp-libc.o: $(SRC)/mycp-libc.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -34,9 +31,9 @@ cleanall: clean
 	-rm $(OBJS)/*.o ./output/* ./memcheck.log
 test: $(SYSCALL_CP)
 	@echo "Testing $(SYSCALL_CP) and $(LIBC_CP)"
-	@/bin/bash -e test.sh ./$(SYSCALL_CP) $(LIBC_CP)
+	@/bin/bash -e test.sh ./$(SYSCALL_CP) ./$(LIBC_CP)
 	@echo "Test passed"
 memcheck: $(SYSCALL_CP)
 	@echo "Memory checking with valgrind on $(SYSCALL_CP) and $(LIBC_CP)"
-	@/bin/sh -e memcheck.sh ./$(SYSCALL_CP) $(LIBC_CP)
+	@/bin/sh -e memcheck.sh ./$(SYSCALL_CP) ./$(LIBC_CP)
 	@echo 'Valgrind output written to memcheck*.log'

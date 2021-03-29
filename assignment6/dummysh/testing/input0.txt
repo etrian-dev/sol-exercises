@@ -1,0 +1,10 @@
+echo 'Inizia il testing'
+time ping www.google.com -c 4
+apt list --installed | grep ocaml
+cut -d : -f 1,6 /etc/passwd
+cat hello.c dummysh.c
+wc dummysh.c
+wc -w /home/nicola/programming/graphs/spt/COPYING
+quit
+time kali
+exit
