@@ -1,14 +1,14 @@
 CC = gcc
 CFLAGS = -c -Wall -pedantic -std=c99 -g
 
-EXE = dummysh.out
+EXE = family.out
 
 .SUFFIXES: .c .h
 .PHONY: clean cleanall test memtest
 
-$(EXE): dummysh.o
+$(EXE): family.o
 	$(CC) -o $@ $<
-dummysh.o: dummysh.c
+family.o: family.c
 
 clean:
 	-rm $(EXE)
@@ -16,9 +16,9 @@ cleanall: clean
 	-rm *.o
 test: $(EXE)
 	@echo "Begin test on $(EXE)"
-	@./$(EXE) < testing/input0.txt
+	@bash -e test.sh ./$(EXE)
 	@echo "Test passed"
 memtest: $(EXE)
 	@echo "Begin test on $(EXE)"
-	@valgrind --leak-check=full ./$(EXE) < testing/input0.txt
+	@bash -e memtest.sh ./$(EXE)
 	@echo "Test passed"

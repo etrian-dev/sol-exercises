@@ -1,0 +1,11 @@
+fine del documento input0.txt
+piaciuta?
+0 0 0 0 1
+0 0 0 1 0
+0 0 1 0 0
+0 1 0 0 0
+1 0 0 0 0
+una matrice
+riga 3 ha diversi token da dividere tra loro
+riga2haunsolotoken
+riga 1 ha esattamente 6 parole

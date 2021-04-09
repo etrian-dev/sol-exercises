@@ -135,6 +135,7 @@ int main(int argc, char **argv)
         }
 
         // Code executed by the child: calls exec to launch the command
+        // execvp is used to automatically search for executables in PATH
         if (child_pid == 0)
         {
             // all the argument s (if any) are stored in char **shell_args
@@ -142,6 +143,7 @@ int main(int argc, char **argv)
             // if it returned, it's an error for sure
             perror("Cannot exec the program");
             cleanup(shell_args, n_tokens);
+            exit(-1);
         }
         // Code executed by the parent: wait for the newly created child, and then do stuff
         else
@@ -155,14 +157,14 @@ int main(int argc, char **argv)
             // if the child didn't exit normally, print an error message to the user
             if (WIFEXITED(ret))
             {
-                printf("child terminated with status %d\n", WEXITSTATUS(ret));
+                printf("child %d terminated with status %d\n", child_pid, WEXITSTATUS(ret));
             }
             else if (WIFSIGNALED(ret)) {
-				printf("child terminated by signal %d", WTERMSIG(ret));
+				printf("child %d terminated by signal %d\n", child_pid, WTERMSIG(ret));
 
 			}
 			else if (WIFSTOPPED(ret)) {
-				printf("child stopped by signal %d", WSTOPSIG(ret));
+				printf("child %d stopped by signal %d\n", child_pid, WSTOPSIG(ret));
 			}
             
             cleanup(shell_args, n_tokens);

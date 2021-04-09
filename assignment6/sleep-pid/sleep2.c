@@ -29,22 +29,34 @@ int main(int argc, char **argv) {
 		long nsleep;
 		// convert argv[1] to an integer & check its value
 		if(isNumber(argv[1], &nsleep) == 0 && nsleep >= 0) {
-			// sleeps argv[1] seconds, using /bin/sleep
-			execl(SLEEP_PROG, SLEEP_PROG, argv[1], (char*)NULL);
-			// if exec returned, it failed for sure
-			perror("Cannot exec /bin/sleep");
-			return 2;
-		}
-	}
-	// the parent waits for its child's termination and prints pid, child_pid
-	else {
-		// I'm not interested in the return status, so NULL is passed in as the second arg
-		if(waitpid(child_pid, NULL, 0) == -1) {
-			perror("waiting for child_pid failed");
+			int sleeping_child;
+			if((sleeping_child = fork()) == -1) {
+				perror("Cannot fork() process");
+				return 1;
+			}
+			
+			// child's child sleeps argv[1] seconds, using /bin/sleep
+			if(sleeping_child == 0) {
+				execl(SLEEP_PROG, SLEEP_PROG, argv[1], (char*)NULL);
+				// if exec returned, it failed for sure
+				perror("Cannot exec /bin/sleep");
+				return 2;
+			}
+			else {
+				// I'm not interested in the return status, so NULL is passed in as the second arg
+				if(waitpid(sleeping_child, NULL, 0) == -1) {
+					perror("waiting for sleeping child failed");
+				}	
+				else {
+					printf("[%d] Parent PID: %d; My PID: %d;Child PID: %d\n", getpid(), getppid(), getpid(), sleeping_child);
+				}
+			}
 		}
 		else {
-			printf("[%d] Parent PID: %d; My PID: %d\n", getpid(), getppid(), getpid());
+			printf("Usage: %s <n>\n", argv[0]);
+			return 0;
 		}
+		 
 	}
 	// then the parent terminates with status 0 (success)
 	return 0;

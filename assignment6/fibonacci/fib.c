@@ -1,9 +1,8 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
+#include <errno.h>
 /* 
  * Calcola ricorsivamente il numero di Fibonacci dell'argomento 'n'.
  * La soluzione deve forkare un nuovo processo che esegue una sola 
@@ -37,45 +36,75 @@ int main(int argc, char *argv[])
 
 static void doFib(int n, int doPrint)
 {
-	static int fib;
-	static int fib_prev;
+	int fib = 0;
 
+	// base case 1: Fib_1 = 1
 	if (n == 1)
 	{
-		fib_prev = 0;
 		fib = 1;
 	}
+	// base case 2: Fib_2 = 1
 	else if (n == 2)
 	{
-		fib_prev = 1;
 		fib = 1;
 	}
 	else
 	{
-		int child;
-		if ((child = fork()) == -1)
+		// fork two children: one calculates Fib_n-1 and the other Fib_n-2
+		pid_t child1, child2;
+		
+		if ((child1 = fork()) == -1)
+		{	if(errno == EAGAIN) {
+				printf("[%d] Too many processes: can\'t fork Fib_%d\n", getpid(), n-1);
+			}
+		}
+		if ((child2 = fork()) == -1)
 		{
-			perror("Cannot fork process");
-			exit(-1);
+			if(errno == EAGAIN) {
+				printf("[%d] Too many processes: can\'t fork Fib_%d\n", getpid(), n-2);
+			}
 		}
 
-		// Il processo figlio chiama doFib una volta
-		if (child == 0)
+		// the first child calculates Fib_n-1
+		if (child1 == 0)
 		{
 			doFib(n - 1, 0);
 		}
+		// the second child calculates Fib_n-2
+		else if(child2 == 0) {
+			doFib(n - 2, 0);
+		}
+		// the parent process waits for its two children to terminate and saves their
+		// return code to extract the corresponding term of the sequence
 		else
 		{
-			int retcode;
-			if (waitpid(child, &retcode, 0) == -1)
-			{
-				perror("Failed waiting");
-				exit(-1);
+			pid_t rpid1, rpid2;
+			int retcode; // contains the fibonacci number
+			
+			// waits for child2's termination, then adds Fib_n-2 to fib
+			if((rpid2 = waitpid(child2, &retcode, 0)) == -1) {
+				perror("Cannot wait for process termination");
+				exit(EXIT_FAILURE);
 			}
-			if (WIFEXITED(retcode))
+			else if (WIFEXITED(retcode))
 			{
-				fib = WEXITSTATUS(retcode) + fib_prev;
-				fib_prev = WEXITSTATUS(retcode);
+				//printf("[%d] Process %d returned with status %d\n", getpid(), (int)rpid2, WEXITSTATUS(retcode));
+				//printf("[%d] fib = %d\n", getpid(), fib + WEXITSTATUS(retcode));
+				//fflush(stdout);
+				fib += WEXITSTATUS(retcode);
+			}
+			
+			// waits for child1's termination, then adds Fib_n-1 to fib
+			if((rpid1 = waitpid(child1, &retcode, 0)) == -1) {
+				perror("Cannot wait for process termination");
+				exit(EXIT_FAILURE);
+			}
+			else if (WIFEXITED(retcode))
+			{
+				//printf("[%d] Process %d returned with status %d\n", getpid(), (int)rpid1, WEXITSTATUS(retcode));
+				//printf("[%d] fib = %d\n", getpid(), fib + WEXITSTATUS(retcode));
+				//fflush(stdout);
+				fib += WEXITSTATUS(retcode);
 			}
 		}
 	}
@@ -83,8 +112,9 @@ static void doFib(int n, int doPrint)
 	// se doPrint == 1, stampa risultato
 	if (doPrint == 1)
 	{
-		printf("Fib_%d = %d\n", n, fib);
+		printf("[%d] Fib_%d = %d\n", getpid(), n, fib);
 	}
+	// altrimenti esce restituendo Fib_n al processo padre
 	else
 	{
 		exit(fib);
