@@ -24,20 +24,22 @@
 # ---------------------------------------------------------------------------
 
 CC                 = gcc -std=c99
-CFLAGS            += -g -Wall -O0 -DDEBUG=1
+CFLAGS            += -g -Wall -O0 -DDEBUG=0
 INCS               = -I .
 LIBS               = -pthread
 SOURCES            = $(wildcard *.c)
 TARGET             = pipeline.out
 
-.PHONY: all test clean cleanall
+.PHONY: all test memtest clean cleanall
 
 pipeline.out: $(SOURCES)
 	$(CC) $(INCS) $(CFLAGS) -o $@ $^ $(LIBS)
 
 all: $(TARGET)
 test: $(TARGET)
-	/bin/bash -e ./testing.sh ./$(TARGET)
+	/bin/sh -e ./testing.sh ./$(TARGET)
+memtest: $(TARGET)
+	/bin/sh -e ./memtest.sh ./$(TARGET)
 clean: 
 	-rm -fr *.o *~
 cleanall: clean

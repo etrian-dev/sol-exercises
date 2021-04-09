@@ -50,16 +50,15 @@ void enqueue(struct Queue **head, struct Queue **tail, char *str, size_t len) {
 	}
 }
 
-char *pop(struct Queue **head, struct Queue **tail) {
+struct Queue *pop(struct Queue **head, struct Queue **tail)
+{
 	if(*head) {
 		struct Queue *tmp = *head;
-		char *str = tmp->data;
 		if(*head == *tail) {
 			*tail = NULL;
 		}
 		*head = (*head)->next;
-		free(tmp);
-		return str;
+		return tmp; // returns the struct: needs to be freed
 	}
 	// empty queue
 	return NULL;

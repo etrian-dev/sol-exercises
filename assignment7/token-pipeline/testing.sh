@@ -2,5 +2,9 @@
 
 # testing script for the pipeline tokenizer
 # $1 is the program to be tested
-$1 testcases/input0.txt > my-output.txt
-diff testcases/output0.txt my-output.txt
+for i in testcases/*; do
+	echo -n "processing $i";
+	$1 $i | diff -w - $i;
+	# the -w flag ignores whitespace
+	echo " => OK";
+done

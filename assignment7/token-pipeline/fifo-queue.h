@@ -32,6 +32,6 @@ struct Queue {
 };
 
 void enqueue(struct Queue **head, struct Queue **tail, char *str, size_t len);
-char *pop(struct Queue **head, struct Queue **tail);
+struct Queue *pop(struct Queue **head, struct Queue **tail);
 
 #endif
