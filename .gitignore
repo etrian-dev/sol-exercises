@@ -1,2 +1,4 @@
 #ignore .out files (executables)
 *.out
+#ignore .vscode dirs
+.vscode/

@@ -1,0 +1,8 @@
+{
+	"files.associations": {
+		"fifo-queue.h": "c",
+		"string.h": "c",
+		"pipeline.h": "c",
+		"cstring": "c"
+	}
+}

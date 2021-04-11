@@ -28,11 +28,11 @@ CFLAGS            += -g -Wall -O0 -DDEBUG=0
 INCS               = -I .
 LIBS               = -pthread
 SOURCES            = $(wildcard *.c)
-TARGET             = pipeline.out
+TARGET             = philosophers.out
 
 .PHONY: all test memtest clean cleanall
 
-pipeline.out: $(SOURCES)
+$(TARGET): $(SOURCES)
 	$(CC) $(INCS) $(CFLAGS) -o $@ $^ $(LIBS)
 
 all: $(TARGET)

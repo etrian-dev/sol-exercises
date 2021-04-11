@@ -30,13 +30,14 @@ LIBS               = -pthread
 SOURCES            = $(wildcard *.c)
 TARGET             = $(SOURCES:.c=)
 
-.PHONY: all release clean cleanall
+.PHONY: all clean cleanall
 
 %: %.c
 	$(CC) $(INCS) $(CFLAGS) -o $@ $< $(LIBS)
 
 all: $(TARGET)
-clean: 
+	-mv $(TARGET) $(TARGET).out
+clean:
 	-rm -fr *.o *~
 cleanall: clean
 	-rm -fr $(TARGET)
