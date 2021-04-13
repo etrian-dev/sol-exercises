@@ -72,7 +72,7 @@ void *tokenize_line(void *unused)
 		// process the token obtained
 		else
 		{
-			//DBG(printf("Popped line: %s\n", elem->data);fflush(stdout));
+			DBG(printf("Popped line: %s\n", elem->data);fflush(stdout));
 
 			// elem->data contains a line. The string is tokenized
 			// and its tokens will be added to the tokens queue (in ME)
@@ -80,7 +80,7 @@ void *tokenize_line(void *unused)
 			char *token = strtok_r(elem->data, " ", &strtok_state);
 			while (token != NULL)
 			{
-				//DBG(printf("Token: %s\n", token);fflush(stdout));
+				DBG(printf("Token: %s\n", token);fflush(stdout));
 
 				// take mutex on the tokens queue
 				if ((ret = pthread_mutex_lock(&mux_tokbuf)) == -1)
@@ -110,7 +110,7 @@ void *tokenize_line(void *unused)
 		}
 	}
 
-	//DBG(printf("Tokenizer thread terminated"); fflush(stdout));
+	DBG(printf("Tokenizer thread terminated"); fflush(stdout));
 
 	return NULL;
 }

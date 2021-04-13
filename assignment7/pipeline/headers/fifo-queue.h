@@ -26,12 +26,20 @@
 
 #include <stddef.h>
 
+// defines the Queue structure: the data field holds a string
+// and the next field a pointer to the next element in the queue
 struct Queue {
 	char *data;
 	struct Queue *next;
 };
 
+// enqueue() duplicates the string str of lenght len and inserts it at the tail of the queue
+// pointed to by head and tail pointers
 void enqueue(struct Queue **head, struct Queue **tail, char *str, size_t len);
+
+// pop() removes the first element from the queue (pointed to by head) and returns it
+// If the queue was empty, NULL is returned
+// Note that the struct Queue* returned needs to be freed by the caller
 struct Queue *pop(struct Queue **head, struct Queue **tail);
 
 #endif

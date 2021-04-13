@@ -59,7 +59,8 @@ void *print_line(void *unused)
 			free(elem);
 		}
 	}
-	//DBG(printf("Printer thread terminated"); fflush(stdout));
+
+	DBG(printf("Printer thread terminated"); fflush(stdout));
 
 	return NULL;
 }

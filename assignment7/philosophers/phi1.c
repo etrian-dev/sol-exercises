@@ -21,52 +21,53 @@
  * 
  */
 
-// This program solves the dining philosophers
-// given an arbitrary number of philosophers as the parameter
-
-// The solution uses ordering to ensure no deadlock ensues
-
 // pthread header
 #include <pthread.h>
-// unix headers
-#include <unistd.h>
 // std lib headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <time.h>
 
-void *phi(void *position);
-void grab_forks(long pos);
-void release_forks(long pos);
+// This program solves the dining philosophers by using an ordering of accesses to
+// resources (forks), to ensure that no deadlock ensues.
+// The program takes two parameters: the number of philosophers (and forks) and
+// the amount of times the philosoher (thread) eats before terminating
 
+// Each fork can be held by at most one philosopher at a time,
+// so each one must have its own mutex
 pthread_mutex_t *mux_forks;
 
 static long n;
 static long iter;
 static int *forks;
 
+// code executed by the philosopher
+void *phi(void *position);
+// code to grab in ME forks nearby philosopher at position pos
+void grab_forks(long pos);
+// code to release ME on grabbed forks
+void release_forks(long pos);
+
+// Launch the program and read arguments,
+// then create threads and wait for their termination
 int main(int argc, char **argv)
 {
 	if(argc != 3) {
-		printf("Usage: %s < #philosophers > < #iterations >\n", argv[0]);
+		printf("Usage: %s < #philosophers > < #dinners >\n", argv[0]);
 	}
 	else {
 		// assuming no conversion errors
 		long nPhil = strtol(argv[1], NULL, 10);
 		long nIter = strtol(argv[2], NULL, 10);
-		assert(nPhil > 0);
+		assert(nPhil > 1);
 		assert(nIter > 0);
 
-		long i;
-
-		// initialize mutex variables
-		mux_forks = malloc(nPhil * sizeof(pthread_mutex_t));
-		if(!mux_forks) {
-			perror("malloc mutex variables");
-			return 1;
-		}
+		// state the execution parameters
+		printf("Number of philosophers: %ld\n", nPhil);
+		printf("Number of dinners per philosopher: %ld\n", nIter);
 
 		// alloc forks for the philosophers
 		forks = malloc(nPhil * sizeof(int));
@@ -74,8 +75,16 @@ int main(int argc, char **argv)
 			perror("malloc forks");
 			return 1;
 		}
+
+		// alloc mutexes on forks
+		mux_forks = malloc(nPhil * sizeof(pthread_mutex_t));
+		if(!mux_forks) {
+			perror("malloc mutex variables");
+			return 1;
+		}
+
 		
-		// alloc memory to hold thread IDs of the given amount of threads
+		// alloc memory to hold thread IDs
 		pthread_t *philosophers = malloc(nPhil * sizeof(pthread_t));
 		if(!philosophers) {
 			perror("malloc philosophers");
@@ -83,35 +92,38 @@ int main(int argc, char **argv)
 		}
 		
 		// initialize mutexes on forks and set all forks to free
-		// no thread has yet been created, so it's safe to do so without using mutexes
+		long i;
 		for(i = 0; i < nPhil; i++) {
-			pthread_mutex_init(&mux_forks[i], NULL);
+			// the second param to mutex_init is NULL, so the default mutex type is created
+			if(pthread_mutex_init(&mux_forks[i], NULL) != 0) {
+				perror("Initializing mutex");
+				return 2;
+			}
+			// fork i is free at the beginning
 			forks[i] = 1;
 		}
+		
 		// initialize the number of philosophers and the number of iterations
 		n = nPhil;
 		iter = nIter;
-		
+
 		int retval;
 		for(i = 0; i < nPhil; i++) {
-			// since this solution uses ordering, each philosopher needs to know
-			// his position in the table (his index in the array)
-			if((retval = pthread_create(philosophers + i, NULL, &phi, (void*)&i)) == -1) {
+			// the index of the thread into the array is passed, so that each thread
+			// can determine the state of adjacent forks
+			if((retval = pthread_create(philosophers + i, NULL, &phi, (void*)i)) == -1) {
 				perror("Cannot create philosopher");
+				return 3;
 			}
 		}
-		
-		long nEaten = 0; // this variable stores how many times philosopher i ate
-		// This is the summary table header
-		//printf("%11s\t%3s\n", "Philosopher", "Ate");
-		
-		// now wait for all philosophers to terminate after that many iterations
+
+		// now wait for all philosophers to terminate: they will do so when the philosopher
+		// ate nIter times. The return value is just useless and thus ignored
 		for(i = 0; i < nPhil; i++) {
-			if((retval = pthread_join(philosophers[i], (void*)&nEaten)) == -1) {
+			if((retval = pthread_join(philosophers[i], NULL)) == -1) {
 				perror("Cannot join philosopher");
+				return 4;
 			}
-			// print the number of times philosopher i ate
-			printf("%11ld\t%ld\n", i, nEaten);
 		}
 
 		// free everything & exit
@@ -126,38 +138,39 @@ int main(int argc, char **argv)
 // Each philosopher observes an ordering in acquiring forks,
 // so that no deadlock can occurr
 void *phi(void *position) {
-	long pos = *(int*)position;
-	int nEats = 0; // counts the number of times the thread executed the eat() function
-
-	long i;
-	for(i = 0; i < iter; i++) {
-		// sleep first
-		printf("Philosopher %ld sleeps\n", pos);
-		sleep(1);
+	// to add a bit of pseudo-randomness to eating and meditation
+	struct timespec delay = {0, 0};
+	unsigned seed = time(NULL);
+	
+	// for easiness of conversion
+	long pos = (long int)position;
+	
+	// Each philosopher eats exactly iter times
+	for(long int i = 0; i < iter; i++) {
+		// meditate first: sleeps for a random-ish amount of nanoseconds
+		delay.tv_nsec = rand_r(&seed) % 999999999;
+		nanosleep(&delay, NULL);
 		
 		// the code is not symmetric: philosophers at even positions try to get hold of
-		// fork i, then i+1. Philosophers at odd position try the opposite
+		// fork i, then i+1. Philosophers at odd positions do the opposite
+		// This way, no deadlock occurs.
 		grab_forks(pos);
-		printf("Philosopher %ld eats\n", pos);
 
-		// spend some time eating
-		sleep(1);
-		nEats++;
+		// spend some random time eating
+		delay.tv_nsec = rand_r(&seed) % 999999999;
+		nanosleep(&delay, NULL);
 
-		// release forks
+		// release forks. First releases the first grabbed fork, then the other one
 		release_forks(pos);
-		
-		//sleep(1);
 	}
-
-	return (void*)nEats;
+	return NULL;
 }
 
 void grab_forks(long pos) {
 	int retval;
 
-	int firstfork = (pos % 2 == 0 ? pos : pos + 1 % n);
-	int secondfork = (pos % 2 == 0 ? (pos + 1) % n : (pos - 1) % n);
+	int firstfork = (pos % 2 == 0 ? pos : (pos + 1) % n);
+	int secondfork = (pos % 2 == 0 ? (pos + 1) % n : pos);
 	
 	if((retval = pthread_mutex_lock(&mux_forks[firstfork])) == -1) {
 		perror("Cannot lock first fork");
@@ -175,8 +188,8 @@ void grab_forks(long pos) {
 void release_forks(long pos) {
 	int retval;
 
-	int firstfork = (pos % 2 == 0 ? pos + 1 % n : pos);
-	int secondfork = (pos % 2 == 0 ? (pos - 1) % n : (pos + 1) % n);
+	int firstfork = (pos % 2 == 0 ? pos : (pos + 1) % n );
+	int secondfork = (pos % 2 == 0 ? (pos + 1) % n : pos);
 
 	forks[firstfork] = 1;
 

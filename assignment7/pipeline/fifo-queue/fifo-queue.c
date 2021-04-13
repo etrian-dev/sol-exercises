@@ -30,13 +30,14 @@
 #include <stddef.h>
 #include <string.h>
 
+// c99 doesn't know this function
 char *strndup(const char *string, size_t size);
 
 void enqueue(struct Queue **head, struct Queue **tail, char *str, size_t len) {
 	struct Queue *elem = malloc(sizeof(struct Queue));
 	if(!elem) {
-		perror("Lol, malloc just failed");
-		exit(-1);
+		perror("[enqueue] malloc failed");
+		exit(1); // brutally exit process
 	}
 	elem->data = strndup(str, len);
 	elem->next = NULL;
@@ -58,7 +59,7 @@ struct Queue *pop(struct Queue **head, struct Queue **tail)
 			*tail = NULL;
 		}
 		*head = (*head)->next;
-		return tmp; // returns the struct: needs to be freed
+		return tmp; // returns the struct: needs to be freed by the caller
 	}
 	// empty queue
 	return NULL;

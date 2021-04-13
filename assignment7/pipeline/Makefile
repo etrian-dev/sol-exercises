@@ -1,16 +1,27 @@
 # Makefile for the pipeline tokenizer
+BIN                = bin
+SRC                = src
+
 CC                 = gcc -std=c99
-CFLAGS            += -g -Wall -O0 -DDEBUG=0
+# these flags cause the program not to print debugging code ( DBG(...) )
+CFLAGS            += -g -Wall -O2 -DNDEBUG
+# these flags turn it on
+DBFLAGS           += -g -Wall -O0 -DDEBUG
 LDFLAGS            = -L .
-INCS               = -I .
+INCS               = -I ./headers
 LIBS               = -pthread -lfifo-queue
-TARGET             = pipeline.out
 
-.PHONY: test memtest clean cleanall
+TARGET             = $(BIN)/pipeline.out
+DBTARGET           = $(BIN)/dbg.out
 
-$(TARGET): main.c line-reader.c tokenizer.c printer.c libfifo-queue.so
+.PHONY: all test memtest clean cleanall
+
+all: $(TARGET) $(DBTARGET)
+$(TARGET): $(wildcard $(SRC)/*.c) libfifo-queue.so
 	$(CC) $(INCS) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
-libfifo-queue.so: fifo-queue.c
+$(DBTARGET): $(wildcard $(SRC)/*.c) libfifo-queue.so
+	$(CC) $(INCS) $(DBFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+libfifo-queue.so: fifo-queue/fifo-queue.c
 	$(CC) $(CFLAGS) $(INCS) -shared -fPIC -o $@ $<
 test: $(TARGET)
 	/bin/sh -e ./testing.sh ./$(TARGET)
@@ -19,4 +30,4 @@ memtest: $(TARGET)
 clean:
 	-rm -fr *.o *~
 cleanall: clean
-	-rm -fr $(TARGET)
+	-rm -fr $(TARGET) $(DBTARGET)

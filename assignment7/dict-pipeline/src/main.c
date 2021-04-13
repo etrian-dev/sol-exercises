@@ -83,18 +83,21 @@ int main(int argc, char **argv)
 		// the threads must then be created
 		pthread_t reader, tokenizer, printer;
 		int ret;
-		if ((ret = pthread_create(&reader, NULL, &read_line, (void *)fp)) == -1)
+		if ((ret = pthread_create(&reader, NULL, &read_line, (void *)fp)) != 0)
 		{
+			errno = ret;
 			perror("Reader thread cannot be created");
 			return 2;
 		}
-		if ((ret = pthread_create(&tokenizer, NULL, &tokenize_line, NULL)) == -1)
+		if ((ret = pthread_create(&tokenizer, NULL, &tokenize_line, NULL)) != 0)
 		{
+			errno = ret;
 			perror("Tokenizer thread cannot be created");
 			return 3;
 		}
-		if ((ret = pthread_create(&printer, NULL, &print_line, NULL)) == -1)
+		if ((ret = pthread_create(&printer, NULL, &print_line, NULL)) != 0)
 		{
+			errno = ret;
 			perror("Printer thread cannot be created");
 			return 4;
 		}

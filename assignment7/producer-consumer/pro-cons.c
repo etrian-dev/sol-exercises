@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 	// creates the consumer thread
 	pthread_t consumer_tid;
 	int ret;
-	if((ret = pthread_create(&consumer_tid, NULL, &consumer, NULL)) != 0) {
+	if((ret = pthread_create(&consumer_tid, NULL, consumer, NULL)) != 0) {
 		errno = ret;
 		perror("Consumer thread cannot be created");
 		return 1;
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
 	// creates the producer thread
 	pthread_t producer_tid;
-	if((ret = pthread_create(&producer_tid, NULL, &producer, (void*)&nwrites)) != 0) {
+	if((ret = pthread_create(&producer_tid, NULL, producer, (void*)nwrites)) != 0) {
 		errno = ret;
 		perror("Producer thread cannot be created");
 		return 2;
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 	}
 	printf("Producer thread %lu returned %d\n", producer_tid, thread_ret);
 
-	if((ret = pthread_join(consumer_tid, (void*)&thread_ret)) != 0) {
+	if((ret = pthread_join(consumer_tid, (void*)thread_ret)) != 0) {
 		errno = ret;
 		perror("Consumer thread cannot be joined");
 		return 3;
@@ -168,7 +168,7 @@ void *consumer(void *arg) {
 // the producer thread's function
 void *producer(void *arg) {
 	// unpack arguments
-	int n = *(int*)arg;
+	int n = (int)arg;
 	
 	unsigned int seed = time(NULL); // rand seed
 	int ret;

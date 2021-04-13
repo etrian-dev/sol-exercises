@@ -81,36 +81,41 @@ int main(int argc, char **argv)
 		// the threads must then be created
 		pthread_t reader, tokenizer, printer;
 		int ret;
-		if ((ret = pthread_create(&reader, NULL, &read_line, (void *)fp)) == -1)
+		if ((ret = pthread_create(&reader, NULL, &read_line, (void *)fp)) != 0)
 		{
-			perror("Reader thread cannot be created");
+			printf("[Main] line reader thread cannot be created: %s\n", strerror(ret));
 			return 2;
 		}
-		if ((ret = pthread_create(&tokenizer, NULL, &tokenize_line, NULL)) == -1)
+		if ((ret = pthread_create(&tokenizer, NULL, &tokenize_line, NULL)) != 0)
 		{
-			perror("Tokenizer thread cannot be created");
+			printf("[Main] tokenizer thread cannot be created: %s\n", strerror(ret));
 			return 3;
 		}
-		if ((ret = pthread_create(&printer, NULL, &print_line, NULL)) == -1)
+		if ((ret = pthread_create(&printer, NULL, &print_line, NULL)) != 0)
 		{
-			perror("Printer thread cannot be created");
+			printf("[Main] printer thread cannot be created: %s\n", strerror(ret));
 			return 4;
 		}
 
 		int lines;
 		// try to join all the threads
-		pthread_join(reader, (void *)&lines);
-		pthread_join(tokenizer, NULL);
-		pthread_join(printer, NULL);
-
-		//DBG(printf("Read %d lines from file %s\n", lines, argv[1]));
-
+		if((ret = pthread_join(reader, (void *)&lines)) != 0) {
+			printf("Cannot join thread %lu: %s\n", reader, strerror(ret));
+		}
 		// all went well
 		// the file can be closed
 		if (fclose(fp) == -1)
 		{
 			perror("File can't be closed");
 			return 5;
+		}
+		
+		if((ret = pthread_join(tokenizer, NULL)) != 0) {
+			printf("Cannot join thread %lu: %s\n", tokenizer, strerror(ret));
+		}
+		
+		if((ret = pthread_join(printer, NULL)) != 0) {
+			printf("Cannot join thread %lu: %s\n", printer, strerror(ret));
 		}
 	}
 	return 0;

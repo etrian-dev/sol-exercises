@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# testing script for the pipeline tokenizer
-# $1 is the program to be tested
-for i in testcases/*; do
-	echo -n "processing $i";
-	$1 $i | diff -w - $i;
-	# the -w flag ignores whitespace
-	echo " => OK";
-done
+# testing script for the dining philosopher problem
+# reads the parameters and executes the program, whose output is sent to stdout
+read -p "#philosophers: " philosophers
+read -p "#dinners: " dinners
+$1 $philosophers $dinners
