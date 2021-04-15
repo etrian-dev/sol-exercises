@@ -10,8 +10,7 @@
 
 void *tokenize_line(void *unused)
 {
-	// stream termination flag, set by the special token {NULL, NULL}
-	int end_of_stream = 0;
+	int end_of_stream = 0; // stream termination flag, set by the special token {NULL, NULL}
 	while (!end_of_stream)
 	{
 		int ret;
@@ -22,7 +21,7 @@ void *tokenize_line(void *unused)
 			exit(-1);
 		}
 
-		// wait until there are no tokens in the queue
+		// wait until there's at least one token in the queue
 		struct Queue *elem;
 		while ((elem = pop(&q_lines_head, &q_lines_tail)) == NULL)
 		{
@@ -39,10 +38,9 @@ void *tokenize_line(void *unused)
 		// if the token is {NULL, NULL} => terminate the thread
 		if (elem->data == NULL && elem->next == NULL)
 		{
-			// special termination token: exit tokenizer and insert the termination token
-			// in the token stream as well
 			end_of_stream = 1;
 
+			// the termination token is forwarded to the tokens queue to terminate the printer as well
 			if ((ret = pthread_mutex_lock(&mux_tokbuf)) == -1)
 			{
 				perror("lock token buffer");
@@ -69,14 +67,17 @@ void *tokenize_line(void *unused)
 				exit(-1);
 			}
 		}
-		// process the token obtained
+		// a new line has been received: tokenize it and put all tokens in the tokens queue
+		// to be received by the printer thread
 		else
 		{
-			DBG(printf("Popped line: %s\n", elem->data);fflush(stdout));
+			DBG(printf("Received line: %s\n", elem->data);fflush(stdout));
 
-			// elem->data contains a line. The string is tokenized
-			// and its tokens will be added to the tokens queue (in ME)
+			// uses reentrant strtok, so its state is stored locally by the thread
+			// and resetted to NULL each time a new line is being processed
 			char *strtok_state = NULL;
+
+			// tokens are strings separated by " "
 			char *token = strtok_r(elem->data, " ", &strtok_state);
 			while (token != NULL)
 			{
@@ -91,8 +92,6 @@ void *tokenize_line(void *unused)
 
 				// enqueue the token on the tokens queue
 				enqueue(&q_tokens_head, &q_tokens_tail, token, strlen(token));
-				// signal the printer thread that a new token has been added
-				pthread_cond_signal(&tokbuf_new);
 
 				// release mutex
 				if ((ret = pthread_mutex_unlock(&mux_tokbuf)) == -1)
@@ -104,7 +103,10 @@ void *tokenize_line(void *unused)
 				// get the next token
 				token = strtok_r(NULL, " ", &strtok_state);
 			}
-			// free the processed line
+			// signal the printer thread that a new tokens have been added
+			pthread_cond_signal(&tokbuf_new);
+
+			// free the processed line and its struct
 			free(elem->data);
 			free(elem);
 		}

@@ -25,6 +25,7 @@
 #define FIFO_QUEUE_INCLUDED
 
 #include <stddef.h>
+#include <pthread.h>
 
 // defines the Queue structure: the data field holds a string
 // and the next field a pointer to the next element in the queue

@@ -1,26 +1,3 @@
-/*
- * tokenizer-pipeline.c
- * 
- * Copyright 2021 nicola vetrini <nicola@ubuntu>
- * 
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- * 
- * 
- */
-
 /* TESTO
  * Scrivere un programma C che implementa una pipeline di tre threads.
  * Il primo thread legge una riga alla volta da un file testuale (il cui nome e' passato
@@ -41,8 +18,6 @@
 #include <pipeline.h>
 // threads library
 #include <pthread.h>
-// unix headers for nanosleep
-#include <unistd.h>
 // std lib headers
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,37 +25,47 @@
 #include <stddef.h>
 #include <string.h>
 
-// declare global queues for communications
+// declare & initialize queues and sync variables here to avoid multiple definitions
+
+// the lines queue is shared by the line reader thread and the tokenizer thread
+// to send and receive lines
 struct Queue *q_lines_head = NULL;
 struct Queue *q_lines_tail = NULL;
+// the tokens queue is shared by the tokenizer and the printer threads
+// to send and receive tokens
 struct Queue *q_tokens_head = NULL;
 struct Queue *q_tokens_tail = NULL;
 
-// syncronization variables for the buffers
+// mutexes for each queue
 pthread_mutex_t mux_lnbuf = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mux_tokbuf = PTHREAD_MUTEX_INITIALIZER;
+// condition variables for each queue are defined as well
 pthread_cond_t lnbuf_new = PTHREAD_COND_INITIALIZER;
 pthread_cond_t tokbuf_new = PTHREAD_COND_INITIALIZER;
 
+
+// The main function reads args to the program, creates the threads and joins them, then exits
 int main(int argc, char **argv)
 {
-	// A filename must be passed as argument
+	// A (valid) filename must be passed as argument
 	if (argc != 2)
 	{
 		printf("Usage: %s <filename>\n", argv[0]);
 	}
 	else
 	{
-		// Open the file (and report the error and exit otherwise)
+		// Open the file in read mode (or report errors and exit otherwise)
 		FILE *fp;
 		if ((fp = fopen(argv[1], "r")) == NULL)
 		{
-			perror("Cannot open input file");
+			printf("[Main] cannot open input file %s: %s\n", argv[1], strerror(errno));
 			return 1;
 		}
-		// the threads must then be created
+		
+		// the threads are then created
 		pthread_t reader, tokenizer, printer;
 		int ret;
+		// the reader thread must know the file pointer as well, so that it can read the file
 		if ((ret = pthread_create(&reader, NULL, &read_line, (void *)fp)) != 0)
 		{
 			printf("[Main] line reader thread cannot be created: %s\n", strerror(ret));
@@ -97,17 +82,16 @@ int main(int argc, char **argv)
 			return 4;
 		}
 
+		// the main waits for all threads to terminate
 		int lines;
-		// try to join all the threads
-		if((ret = pthread_join(reader, (void *)&lines)) != 0) {
+		if((ret = pthread_join(reader, (void *)lines)) != 0) {
 			printf("Cannot join thread %lu: %s\n", reader, strerror(ret));
 		}
-		// all went well
-		// the file can be closed
+		// the file can be closed because the reader thread is terminated
 		if (fclose(fp) == -1)
 		{
 			perror("File can't be closed");
-			return 5;
+			return 1;
 		}
 		
 		if((ret = pthread_join(tokenizer, NULL)) != 0) {

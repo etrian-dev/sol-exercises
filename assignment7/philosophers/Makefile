@@ -24,23 +24,45 @@
 # ---------------------------------------------------------------------------
 
 CC                 = gcc -std=c99
-CFLAGS            += -g -Wall -O0 -DDEBUG=0
+CFLAGS            += -g -Wall -O0
 INCS               = -I .
 LIBS               = -pthread
-SOURCES            = $(wildcard *.c)
-TARGET             = philosophers.out
+SOL1               = phi1.out
+SOL2               = phi2.out
+SOL3               = phi3.out
 
-.PHONY: all test memtest clean cleanall
+.PHONY: all debug \
+		test1 test2 test3 \
+		memtest1 memtest2 memtest3 \
+		benchmark \
+		clean cleanall
 
-$(TARGET): $(SOURCES)
-	$(CC) $(INCS) $(CFLAGS) -o $@ $^ $(LIBS)
-
-all: $(TARGET)
-test: $(TARGET)
-	/bin/sh -e ./testing.sh ./$(TARGET)
-memtest: $(TARGET)
-	/bin/sh -e ./memtest.sh ./$(TARGET)
+all: $(SOL1) $(SOL2) $(SOL3)
+debug: phi1.c phi2.c phi3.c
+	$(CC) $(INCS) $(CFLAGS) -o dbg-phi1.out phi1.c -DDEBUG $(LIBS)
+	$(CC) $(INCS) $(CFLAGS) -o dbg-phi2.out phi2.c -DDEBUG $(LIBS)
+	$(CC) $(INCS) $(CFLAGS) -o dbg-phi3.out phi3.c -DDEBUG $(LIBS)
+$(SOL1): phi1.c
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS) -DNDEBUG
+$(SOL2): phi2.c
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS) -DNDEBUG
+$(SOL3): phi3.c
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS) -DNDEBUG
+test1: $(SOL1)
+	/bin/sh -e ./testing.sh 1
+test2: $(SOL2)
+	/bin/sh -e ./testing.sh 2
+test3: $(SOL2)
+	/bin/sh -e ./testing.sh 3
+benchmark: $(SOL1) $(SOL2) $(SOL3)
+	/bin/sh -e ./benchmark.sh $(SOL1) $(SOL2) $(SOL3)
+memtest1: $(SOL1)
+	/bin/sh -e ./memtest.sh 1;
+memtest2: $(SOL2)
+	/bin/sh -e ./memtest.sh 2;
+memtest3: $(SOL3)
+	/bin/sh -e ./memtest.sh 3;
 clean: 
 	-rm -fr *.o *~
 cleanall: clean
-	-rm -fr $(TARGET)
+	-rm -fr *.out

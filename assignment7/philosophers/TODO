@@ -1,0 +1,9 @@
+TODO
+
+Cleanup comments in phi3.c
+Implement phi2.c (trylock)
+wrap debugging prints in DBG (controlled by compilation flag -DNDEBUG
+
+Osservazione: avere ++thread non fa aumentare di molto il tempo di esecuzione, ma
+quelli di occupazione di CPU in spazio utente e kernel. Di contro, avere ++dinners e --threads
+fa aumentare molto il tempo di esecuzione, ma praticamente nulla di occupazione CPU

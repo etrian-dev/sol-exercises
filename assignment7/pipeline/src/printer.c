@@ -10,8 +10,7 @@
 
 void *print_line(void *unused)
 {
-	// stream termination flag, set by the special token {NULL, NULL}
-	int end_of_stream = 0;
+	int end_of_stream = 0; // stream termination flag, set by the special token {NULL, NULL}
 
 	while (!end_of_stream)
 	{
@@ -23,7 +22,7 @@ void *print_line(void *unused)
 			exit(-1);
 		}
 
-		// wait until there are no tokens in the queue
+		// wait until there are tokens in the queue
 		struct Queue *elem;
 		while ((elem = pop(&q_tokens_head, &q_tokens_tail)) == NULL)
 		{
@@ -41,20 +40,27 @@ void *print_line(void *unused)
 		if (elem->data == NULL && elem->next == NULL)
 		{
 			end_of_stream = 1;
-			// free the last token in the stream (it's malloc's at line-reader.c:66)
+			
+			// free the last token in the stream
+			// No need to free elem->data as no string is malloc'd (see code in line-reader.c)
 			free(elem);
 		}
 		else
 		{
-			// print the token to stdout
-			if (strrchr(elem->data, '\n') == NULL)
+			// print the token to stdout. If it contains a newline,
+			// then no ' ' is added (otherwise the output of the next token will begin
+			// on a new line, prefixed by a blank). 
+			if (strrchr(elem->data, '\n') != NULL)
 			{
-				fprintf(stdout, "%s ", elem->data);
+				printf("%s", elem->data);
 			}
+			// Otherwise, add a blank to separate tokens on the same line
 			else
 			{
-				fprintf(stdout, "%s", elem->data);
+				printf("%s ", elem->data);
 			}
+
+			// free the token string and its struct
 			free(elem->data);
 			free(elem);
 		}

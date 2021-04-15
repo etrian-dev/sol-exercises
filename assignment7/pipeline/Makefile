@@ -14,9 +14,10 @@ LIBS               = -pthread -lfifo-queue
 TARGET             = $(BIN)/pipeline.out
 DBTARGET           = $(BIN)/dbg.out
 
-.PHONY: all test memtest clean cleanall
+.PHONY: all debug test memtest clean cleanall
 
-all: $(TARGET) $(DBTARGET)
+all: $(TARGET)
+debug: $(DBTARGET)
 $(TARGET): $(wildcard $(SRC)/*.c) libfifo-queue.so
 	$(CC) $(INCS) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 $(DBTARGET): $(wildcard $(SRC)/*.c) libfifo-queue.so

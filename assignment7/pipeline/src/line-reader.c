@@ -16,10 +16,10 @@
 // and put them in a FIFO queue for a tokenizer to process
 void *read_line(void *file_pointer)
 {
-	// just to remind the fact that file_pointer is in fact a pointer to a FILE
+	// as a reminder that file_pointer is actually a FILE*
 	FILE *fpoint = (FILE *)file_pointer;
 
-	// Now the line buffer can be alloc'd
+	// alloc the private buffer used to read a line from the file
 	char *private_lnbuf = calloc(MAX_LN_SZ, sizeof(char));
 	if (!private_lnbuf)
 	{
@@ -34,6 +34,8 @@ void *read_line(void *file_pointer)
 	// read the file line by line inside buf
 	while (fgets(private_lnbuf, MAX_LN_SZ, fpoint) != NULL)
 	{
+		DBG(printf("Read line: %s\n", private_lnbuf);fflush(stdout));
+
 		lines_read++;
 
 		// Take mutex on the lines queue
@@ -43,11 +45,9 @@ void *read_line(void *file_pointer)
 			exit(-1);
 		}
 
-		//DBG(printf("Read line: %s\n", private_lnbuf);fflush(stdout));
 
 		// insert the line just read into the queue
-		// NOTE: the string is duplicated by enqueue()
-		// so it must be freed by who pops the queue
+		// NOTE: the string is duplicated by enqueue() using strndup()
 		enqueue(&q_lines_head, &q_lines_tail, private_lnbuf, strnlen(private_lnbuf, MAX_LN_SZ));
 		// signal waiting tokenizer thread that a line has been added to the queue
 		pthread_cond_signal(&lnbuf_new);
@@ -101,6 +101,6 @@ void *read_line(void *file_pointer)
 	// last thing: free the internal line buffer
 	free(private_lnbuf);
 
-	// if all went well then return the number of lines read
+	// if all went well then the thread returns the number of lines read
 	return (void *)lines_read;
 }
