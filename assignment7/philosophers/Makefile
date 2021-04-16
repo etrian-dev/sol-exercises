@@ -25,23 +25,28 @@
 
 CC                 = gcc -std=c99
 CFLAGS            += -g -Wall -O0
+OFLAGS            += -Wall -pedantic -O2
 INCS               = -I .
 LIBS               = -pthread
 SOL1               = phi1.out
 SOL2               = phi2.out
 SOL3               = phi3.out
 
-.PHONY: all debug \
+.PHONY: all debug optimized \
 		test1 test2 test3 \
 		memtest1 memtest2 memtest3 \
-		benchmark \
+		benchmark benchmark-opt \
 		clean cleanall
 
-all: $(SOL1) $(SOL2) $(SOL3)
+all: $(SOL1) $(SOL2) $(SOL3) debug optimized
 debug: phi1.c phi2.c phi3.c
 	$(CC) $(INCS) $(CFLAGS) -o dbg-phi1.out phi1.c -DDEBUG $(LIBS)
 	$(CC) $(INCS) $(CFLAGS) -o dbg-phi2.out phi2.c -DDEBUG $(LIBS)
 	$(CC) $(INCS) $(CFLAGS) -o dbg-phi3.out phi3.c -DDEBUG $(LIBS)
+optimized: phi1.c phi2.c phi3.c
+	$(CC) $(INCS) $(OFLAGS) -o opt-phi1.out phi1.c -DNDEBUG $(LIBS)
+	$(CC) $(INCS) $(OFLAGS) -o opt-phi2.out phi2.c -DNDEBUG $(LIBS)
+	$(CC) $(INCS) $(OFLAGS) -o opt-phi3.out phi3.c -DNDEBUG $(LIBS)
 $(SOL1): phi1.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS) -DNDEBUG
 $(SOL2): phi2.c
@@ -56,6 +61,8 @@ test3: $(SOL2)
 	/bin/sh -e ./testing.sh 3
 benchmark: $(SOL1) $(SOL2) $(SOL3)
 	/bin/sh -e ./benchmark.sh $(SOL1) $(SOL2) $(SOL3)
+benchmark-opt: optimized
+	/bin/sh -e ./benchmark.sh opt-phi1.out opt-phi2.out opt-phi3.out
 memtest1: $(SOL1)
 	/bin/sh -e ./memtest.sh 1;
 memtest2: $(SOL2)
