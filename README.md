@@ -40,3 +40,7 @@ tenuto durante l'A.A. 2020-2021
     1. monitors of the neighobours'states. Neighbours are helped if philosopher i finishes eating
   * Concurrent pipeline with three threads: a line reader, a tokenizer and a printer. They interact through a FIFO queue
   * Extends the program above by having the third thread print each token exactly once, despite the number of occurrences. This is achieved by using an hash table as a dictionary and dumping its contents when all tokens have been received
+* [eight assignment: pipes & threads](./assignment8)
+  * Multithreaded producer/consumer: n producers and m consumers with a FIFO queue (unbounded) of k messages
+  * A program that evaluates an expression using bc(1) connected troough an anonymous pipe
+  * given the program produced by [dec.c](./assignment8/pipedec/dec.c) forks two copies and creates a bidirectional connection trough pipes
