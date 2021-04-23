@@ -104,7 +104,9 @@ int main(int argc, char **argv) {
                                 close(resultout[1]);
 
                                 // send line to the child process trough the pipe
-                                if(send_line(line, strlen(line) + 1, msgin[1]) == -1) {
+                                // NOTE: the string terminator is not sent because bc
+                                // does not recognize it and throws an error message
+                                if(send_line(line, strlen(line), msgin[1]) == -1) {
                                         err = 1;
                                         continue;
                                 }
@@ -121,17 +123,17 @@ int main(int argc, char **argv) {
                                 display_output(line, result);
 
                                 // then send the message "quit\n" to quit bc
-                                if(send_line("quit\n", 6, msgin[1]) == -1) {
+                                /*if(send_line("quit\n", 6, msgin[1]) == -1) {
                                         err = 1;
                                         continue;
-                                }
+                                }*/
 
-                                // wait the child's termination
-                                waitpid(child, NULL, 0);
 
                                 // communication terminated: close all remanining descriptors
                                 close(msgin[1]);
                                 close(resultout[0]);
+                                // wait the child's termination
+                                waitpid(child, NULL, 0);
 
                                 free(result);
                         }
@@ -160,7 +162,7 @@ int redirection(int pipe_read, int pipe_write) {
 
         // duplicate the pipe write fd so that the child's stdout (1) is redirected to the pipe
         if(dup2(pipe_write, 1) == -1) {
-                printf("%d: Cannot dup2(1, %d): %s\n", getpid(), pipe_write, strerror(errno));
+                printf("%d: Cannot dup2(%d, 1): %s\n", getpid(), pipe_write, strerror(errno));
                 return -1;
         }
         // now stdout is useless, so close it

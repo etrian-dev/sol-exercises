@@ -1,29 +1,21 @@
-# Makefile for the concurrent messages pipeline
-CC          = gcc -std=c99
-CFLAGS		+= -Wall -O2 -DNDEBUG
-DBFLAGS     += -g -Wall -O0 -DDEBUG
-LDFLAGS		= -L ./libs -Wl,-rpath=./libs
-INCS		= -I ./headers
-LIBS		= -pthread -lfifo-queue
+# Makefile for pipebc
+CC               = gcc -std=gnu11
+CFLAGS		    += -Wall -O2 -DNDEBUG
+DBFLAGS         += -g -Wall -O0 -DDEBUG
 
-TARGET		= ./bin/messqueue.out
-DBG         = ./bin/debug.out
+TARGET		     = bin/pipebc.out
+DBG              = bin/debug.out
 
-.PHONY: all debug clean cleanall memcheck
+.PHONY: all debug clean cleanall test
 
 all: $(TARGET)
-debug: libs/libfifo-queue.so $(wildcard src/*.c)
-	$(CC) $(DBFLAGS) $(INCS) $(LDFLAGS) -o $(DBG) $(wildcard src/*.c) $(LIBS)
-$(TARGET): libs/libfifo-queue.so $(wildcard src/*.c)
-	$(CC) $(CFLAGS) $(INCS) $(LDFLAGS) -o $@ $(wildcard src/*.c) $(LIBS)
-# commands to create the shared lib for the queue
-libs/libfifo-queue.so: objs/fifo-queue.o
-	$(CC) $(CFLAGS) $(INCS) -shared -o $@ $<
-objs/fifo-queue.o: fifo-queue/fifo-queue.c
-	$(CC) $(CFLAGS) $(INCS) -c -fPIC -o $@ $<
+debug: src/main.c
+	$(CC) $(DBFLAGS) -o $(DBG) $<
+$(TARGET): src/main.c
+	$(CC) $(CFLAGS) -o $(TARGET) $<
 clean:
-	-rm -fr $(wildcard objs/*.o) $(wildcard libs/*.so) *~
+	-rm -fr $(wildcard objs/*.o) *~
 cleanall: clean
 	-rm -fr $(TARGET)
-memcheck: debug
-	/bin/sh -e ./memtest.sh ./$(DBG)
+test: $(TARGET)
+	./$(TARGET) < testcases/input0.txt
