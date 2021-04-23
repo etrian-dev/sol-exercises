@@ -8,12 +8,10 @@
  */
 #include <sys/types.h>
 #include <sys/wait.h>
-//#include <fcntl.h>
 #include <unistd.h>
 // std lib headers
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 
 int main(int argc, char **argv) {
     if(argc == 2) {
@@ -48,11 +46,15 @@ int main(int argc, char **argv) {
                 perror("Cannot connect ch1\'s stdout");
             }
 
-            close(p1[0]);
-            close(p1[1]);
-            close(p2[0]);
-            close(p2[1]);
+            // all the descriptors to the pipes must be closed in the child
+            // so that only 0 and 1 are open (though redirected trough pipes)
+            if( close(p1[0]) == -1
+                ||close(p1[1]) == -1
+                || close(p2[0]) == -1
+                || close(p2[1]) == -1)
+            { perror("Cannot close some pipe fd"); return 2;}
 
+            // now exec dec.out with argument x (argv[1])
             execl("./dec.out", "./dec.out", argv[1], NULL);
 
             perror("Exec failed");
@@ -75,28 +77,42 @@ int main(int argc, char **argv) {
                 perror("Cannot connect ch2\'s stdout");
             }
 
-            close(p1[0]);
-            close(p1[1]);
-            close(p2[0]);
-            close(p2[1]);
 
+            // all the descriptors to the pipes must be closed in the child
+            // so that only 0 and 1 are open (though redirected trough pipes)
+            if( close(p1[0]) == -1
+                ||close(p1[1]) == -1
+                || close(p2[0]) == -1
+                || close(p2[1]) == -1)
+            { perror("Cannot close some pipe fd"); return 2;}
+
+            // now exec dec.out without any argument
             execl("./dec.out", "./dec.out", NULL);
 
             perror("Exec failed");
             return 1;
         }
 
-        // parent code: waits for any child to terminate. Because all pipe fds were closed
-        // the only open fds in the children are 0 and 1. When ch1 or ch2 terminates closes
-        // its stdin& stdout, so the other waiting to read() returns 0 and thus exits as well
-
-
-        // (**) So, once one child terminated, the other terminates on its own without needing the parent
-        // to wait for him (otherwise the parent will hang)
+        /*
+         parent code: wait for any child to terminate. Since all pipe fds
+         p1[0], p1[1], ... were closed in the children as soon as one of them
+         terminates because x < 0, then it closes its stdin and stdout and thus
+         when the other child tries to r = read() it returns r = 0 and the process
+         teminates as well (using the other exiting message: see dec.c)
+         (***) Whether the parent waits for the second child's termination is irrelevant,
+         because it's bound to terminate anyway and even if the parent terminates before
+         its child, the zombie wolud then be terminated by init (or equivalent)
+         */
         if(ch1 != 0 && ch2 != 0) {
-            waitpid(-1, NULL, 0);
-            waitpid(-1, NULL, WNOHANG); // this is actually quite useless, because of (**)
+            // The parent process needs to close its open pipe file descriptors anyway
+            if( close(p1[0]) == -1
+                ||close(p1[1]) == -1
+                || close(p2[0]) == -1
+                || close(p2[1]) == -1)
+            { perror("Cannot close some pipe fd"); return 2;}
 
+            waitpid(-1, NULL, 0); // wait for any children
+            waitpid(-1, NULL, WNOHANG); // this is actually quite useless, because of (***)
         }
     }
     else {
