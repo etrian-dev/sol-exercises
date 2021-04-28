@@ -165,8 +165,11 @@ int redirection(int pipe_read, int pipe_write) {
                 printf("%d: Cannot dup2(%d, 1): %s\n", getpid(), pipe_write, strerror(errno));
                 return -1;
         }
-        // now stdout is useless, so close it
-        //close(1);
+        // redirect stderr to pipe_write as well
+	if(dup2(pipe_write, 2) == -1) {
+		printf("%d: Cannot dup2(%d, 2): %s\n", getpid(), pipe_write, strerror(errno));
+                return -1;
+	}
 
 	return 0;
 }
