@@ -44,3 +44,6 @@ tenuto durante l'A.A. 2020-2021
   * Multithreaded producer/consumer: n producers and m consumers with a FIFO queue (unbounded) of k messages
   * A program that evaluates an expression using bc(1) connected troough an anonymous pipe
   * given the program produced by [dec.c](./assignment8/pipedec/dec.c) forks two copies and creates a bidirectional connection trough pipes
+* [ninth assignment: sockets](./assignment9)
+  * A server receives expressions from a client, calculates the result with bc(1) and sends it back to the client. The communication between client and server uses local sockets (AF_UNIX)
+  * A multithreaded server to capitalize strings the clients send: all clients have a dedicated thread executing operations (one thread per client model)
