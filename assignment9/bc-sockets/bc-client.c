@@ -65,8 +65,12 @@ int main(int argc, char **argv) {
             }
             // otherwise the connection was estabilished, so it must exit the loop
             else {
+                printf("[CLIENT %d]: Connected on socket %d\n", getpid(), mysock);
                 break;
             }
+        }
+        if(tries == MAXTRIES) {
+            exit(-1);
         }
 
         // connected to socket: read strings (expressions) and send them to the server
@@ -89,17 +93,14 @@ int main(int argc, char **argv) {
             // write the expression to stdout as well
             DBG(printf("[CLIENT %d]: sent \"%s\" from socket %d\n", getpid(), expression, mysock));
 
+            int ret;
             // write the expression to the socket
-            if(write(mysock, expression, mlen) == -1) {
-                DBG(printf("[CLIENT %d]: Cannot write to the socket -> exiting: %s\n", getpid(), strerror(errno)));
-                exit(-1);
-            }
+            ret = write(mysock, expression, mlen);
+            printf("Write expr: %d\n", ret);
 
             // wait for the reply from the server using a blocking read() on the socket
-            if(read(mysock, reply, MSG_MAXLEN) == -1) {
-                perror("Cannot obtain result from socket");
-                exit(-1);
-            }
+            ret = read(mysock, reply, MSG_MAXLEN);
+            printf("Read res: %d\n", ret);
 
             // print the result of the expression to stdout
             printf("Risultato: %s\n", reply);

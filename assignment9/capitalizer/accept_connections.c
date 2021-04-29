@@ -1,3 +1,9 @@
+// This function is executed by the thread that accepts connections from clients and
+// spawns workers to process their requests
+
+// my header
+#include <util.h>
+// multithreading header
 #include <pthread.h>
 // sockets headers
 #include <sys/un.h>
@@ -7,17 +13,11 @@
 #include <errno.h>
 #include <string.h>
 
-// macro to wipe out debug prints from release executables
-#if defined(DEBUG)
-#define DBG(X) X
-#else
-#define DBG(X)
-#endif
-
+// this is the function executed by worker threads spawned by this thread
 void *work(void *client_sock);
 
-// the socket where the thread should accept connections is the one passed as a parameter
-// despite the cast it's an integer
+// this thread receives the socket where the connections are coming as a parameter
+// for each accepted connection, a detached thread is spawned and it loops
 void *accept_connections(void *socket) {
     // keeps trying to accept any incoming connections
     while(1) {

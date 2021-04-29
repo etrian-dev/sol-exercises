@@ -11,6 +11,8 @@
  * o piu' richieste al server multithreaded.
  */
 
+// my header
+#include <util.h>
 // threads header
 #include <pthread.h>
 // syscall headers
@@ -23,41 +25,23 @@
 #include <errno.h>
 #include <stdlib.h>
 
-// macro to wipe out debug prints from release executables
-#if defined(DEBUG)
-#define DBG(X) X
-#else
-#define DBG(X)
-#endif
-
-
-// known path to create the socket file
-#define ADDR "./sock"
-
-// maximum socket path lenght
-#define PATHLEN_MAX 108
-
-#define READ_BUFSZ 1000
-
 int sock_init(char *address, size_t len);
 void *accept_connections(void *socket);
 
 int main(int argc, char **argv) {
     // create the socket and bind it to a known address
-    int sock_fd = sock_init(ADDR, strlen(ADDR));
+    int sock_fd;
+    if((sock_fd = sock_init(ADDR, strlen(ADDR))) == -1) {
+        DBG(printf("[SERVER %d]: Cannot create server socket: %s\n", getpid(), strerror(errno)));
+        return 1;
+    }
 
-    // A dedicated thread is spawned to handle accepting connections
+    // A thread is spawned to handle accepting connections from clients
     pthread_t acceptor;
     if(pthread_create(&acceptor, NULL, accept_connections, (void*)sock_fd) == -1) {
         DBG(printf("[SERVER %d]: Cannot create acceptor thread: %s\n", getpid(), strerror(errno)));
         return 1;
     }
-
-    // then unlink the socket file to remove it (explained at man 2 unlink)
-    //if(unlink(argv[1]) == -1) {
-        //printf("[SERVER %d]: cannot remove socket \"%s\": %s\n", getpid(), argv[1], strerror(errno));
-        //return 4;
-    //}
 
     pthread_join(acceptor, NULL);
 

@@ -1,17 +1,15 @@
 CC = gcc
 CFLAGS = -g -Wall -pedantic -std=c99
-OPTFLAGS = -O2
+
+DBG = -DDEBUG
 
 CLIENT = bc-client
 SERVER = bc-serv
 
-.PHONY: all debug
+.PHONY: all
 
-debug:
-	$(CC) $(CFLAGS) -o $(SERVER).out $(SERVER).c -DDEBUG
-	$(CC) $(CFLAGS) -o $(CLIENT).out $(CLIENT).c -DDEBUG
-	-rm -rf s1
-all:
-	$(CC) $(CFLAGS) $(OPTFLAGS) -o dbg-$(SERVER).out $(SERVER).c -DNDEBUG
-	$(CC) $(CFLAGS) $(OPTFLAGS) -o dbg-$(CLIENT).out $(CLIENT).c -DNDEBUG
-	-rm -rf s1
+all: $(CLIENT) $(SERVER)
+$(CLIENT):
+	$(CC) $(CFLAGS) -o $(CLIENT).out $(CLIENT).c $(DBG)
+$(SERVER):
+	$(CC) $(CFLAGS) -o $(SERVER).out $(SERVER).c child.c $(DBG)

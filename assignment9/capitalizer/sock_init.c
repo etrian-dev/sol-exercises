@@ -1,3 +1,7 @@
+// function that performs socket initialization
+
+// my header
+#include <util.h>
 // sockets headers
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -6,6 +10,9 @@
 #include <errno.h>
 #include <string.h>
 
+// creates a socket, binds it to and address (passed as a parameter) and makes it
+// listen for connections (up to SOMAXCONN queued)
+// If some step fails returns -1, otherwise the socket's file descriptor is returned
 int sock_init(char *addr, size_t len) {
     // first create a socket and get a fd for it
     int sock_fd;
@@ -13,7 +20,7 @@ int sock_init(char *addr, size_t len) {
     // "reliable, two-way, connection-based byte stream" (see man 2 socket)
     if((sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         perror("Cannot create socket");
-        return 1;
+        return -1;
     }
 
     // the socket then must be binded to an address. in this case the address is
@@ -25,13 +32,13 @@ int sock_init(char *addr, size_t len) {
 
     if(bind(sock_fd, (struct sockaddr *)&address, sizeof(address)) == -1) {
         printf("Cannot bind socket %d to address \"%s\": %s\n", sock_fd, addr, strerror(errno));
-        return 2;
+        return -;
     }
 
     // now that the socket is binded to some file, make it listen for incoming connections
     if(listen(sock_fd, SOMAXCONN) == -1) {
         printf("Cannot listen on socket %d: %s\n", sock_fd, strerror(errno));
-        return 2;
+        return -1;
     }
 
     // socket created and listening: ready to accept connections

@@ -12,6 +12,8 @@
  * attesa di ricevere una nuova connessione.
  */
 
+ /* variante: scrivere direttamente dallo stdout di bc al socket tramite pipe */
+
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -35,12 +37,21 @@
 // defines the buffer size
 #define BUFSZ 1000
 
+// code executed by the child
+void child(int *in_pipe, int *out_pipe);
+
 // The program is a server using sockets to communicate with client processes in solving
 // expressions. It receives exactly one argument (a string) which is path to the
 // socket the server is listening to
 int main(int argc, char **argv) {
+    pthread_mutex_t mux_sock;
+    pthread_mutex_init(&mux_sock);
+
     if(argc != 2) { printf("Usage: %s <sockpath>\n", argv[0]);}
     else {
+        // unlink the socket file to remove it if it existed (explained at man 2 unlink)
+        unlink(argv[1]); // ignore whether it succeded or failed
+
         // sanity check: argument lenght is less the max socket path lenght
         assert(strlen(argv[1]) < PATHLEN_MAX);
 
@@ -66,43 +77,13 @@ int main(int argc, char **argv) {
         }
         // code executed in the child process
         if(bc == 0) {
-            // connect pipes to receive input from the parent and send output to it
-            if(dup2(send_op[0], 0) == -1) {
-                perror("Cannot dup pipe fd");
-                exit(-1);
-            }
-            if(dup2(receive_res[1], 1) == -1) {
-                perror("Cannot dup pipe fd");
-                exit(-1);
-            }
-            // dup child's stderr to be redirected trough the pipe as well
-            if(dup2(receive_res[1], 2) == -1) {
-                perror("Cannot dup pipe fd");
-                exit(-1);
-            }
-            // then close all pipe fds so that only stdin and stdout are open in this process
-            if( close(send_op[0]) == -1
-                || close(send_op[1]) == -1
-                || close(receive_res[0]) == -1
-                || close(receive_res[1]) == -1)
-            {
-                perror("Some fd cannot be closed");
-                exit(-1);
-            }
-
-            // options -lq are needed to have the math library and no welcome message
-            execl("/usr/bin/bc", "/usr/bin/bc", "-lq", NULL);
-            // exec returns only if it fails
-            perror("Cannot exec bc(1)");
-            exit(1);
+            child(send_op, receive_res);
         }
         // Code executed by the parent process
         // close unused pipe fds
-        else{
-            if(close(send_op[0]) == -1 || close(receive_res[1]) == -1) {
-                perror("Some fd cannot be closed");
-                exit(-1);
-            }
+        if(close(send_op[0]) == -1) {
+            perror("Some fd cannot be closed");
+            exit(-1);
         }
 
         /*
@@ -131,33 +112,37 @@ int main(int argc, char **argv) {
             return 2;
         }
 
+        // the maximum number of queued connections is 0
+        if(listen(sock_fd, 0) == -1) {
+            printf("Cannot listen on socket %d: %s\n", sock_fd, strerror(errno));
+            return 2;
+        }
 
         // make the server listen for incoming connections (one at a time), then connect
         // accept the connection and do i/o with that socket
         while(1) {
-            // the maximum number of queued connections is 0, so one client at a time
-            // can be connected to the server
-            if(listen(sock_fd, 0) == -1) {
-                printf("Cannot listen on socket %d: %s\n", sock_fd, strerror(errno));
-                return 2;
-            }
-
-            // the socket sock_fd now is listening for connections, and the accept() call
-            // IN THIS CASE blocks the process until a connection is received, and accepts it
-            struct sockaddr_un conn_addr; // this struct stores the accepted connection infos on success
-            int len;
             int conn_sock; // the new socket where the communication happens.
             // This socket is connected to another in the client process
-            if((conn_sock = accept(sock_fd, (struct sockaddr *)&conn_addr, (socklen_t *)&len)) == -1) {
+            if((conn_sock = accept(sock_fd, NULL, NULL)) == -1) {
                 printf("Cannot accept connection on socket %d: %s\n", sock_fd, strerror(errno));
                 return 3;
             }
 
-            // Connection estabilished: receive operations from the client and send
-            // them to the child and receive results to send to the client
+            // connection accepted: print a message on the server's stdout
+            printf("[SERVER %d]: Connection ACCEPTED\n", getpid());
 
-            // the read buffer conatins operations requested by the client.
-            // If the string is "quit", it closes the connection with the client
+            // redirect the result pipe output directly to the client socket
+            if(dup2(receive_res[1], conn_sock) == -1) {
+                printf("Cannot duplicate sock\n");
+                return 2;
+            }
+            close(receive_res[1]);
+
+            // Connection estabilished: receive operations from the client and send
+            // them to the child executing bc
+
+            // the read buffer contains operations requested by the client.
+            // If the string is "quit", it closes this connection and waits for another one
             char *buf = calloc(BUFSZ, sizeof(char));
             if(!buf) {perror("Alloc error"); exit(-1);}
 
@@ -172,21 +157,6 @@ int main(int argc, char **argv) {
                 // write lenght is limited by the # of bytes read by read()
                 if(write(send_op[1], buf, msglen) == -1) {
                     DBG(printf("[SERVER %d]: write to pipe %d failed: %s\n", getpid(), send_op[1], strerror(errno)));
-                    exit(-1);
-                }
-
-                // wait for the reply from bc, using a blocking call to read() on the pipe
-                // receive_res[1]
-                int res_len;
-                if((res_len = read(receive_res[0], buf, BUFSZ)) == -1) {
-                    DBG(printf("[SERVER %d]: read from pipe %d failed: %s\n", getpid(), receive_res[0], strerror(errno)));
-                    exit(-1);
-                }
-                buf[res_len - 1] = '\0'; // if for some reason the terminator is not set, set it
-
-                // then send the result on the socket to the client
-                if(write(conn_sock, buf, res_len) == -1) {
-                    DBG(printf("[SERVER %d]: write to socket %d failed: %s\n", getpid(), conn_sock, strerror(errno)));
                     exit(-1);
                 }
 
@@ -205,21 +175,17 @@ int main(int argc, char **argv) {
                 exit(-1);
             }
 
+            // connection teriminated: print a message on the server's stdout
+            printf("[SERVER %d]: Connection on socket %d TERMINATED\n", getpid(), conn_sock);
+
             // free the client buffer: we don't want buffers to be shared by different
             // clients
             free(buf);
+            close(conn_sock);
         }
 
         // then close everything  & free
         close(sock_fd);
-        close(send_op[1]);
-        close(receive_res[0]);
-
-        // then unlink the socket file to remove it (explained at man 2 unlink)
-        if(unlink(argv[1]) == -1) {
-            DBG(printf("[SERVER %d]: cannot remove socket \"%s\": %s\n", getpid(), argv[1], strerror(errno)));
-            return 4;
-        }
     }
     return 0;
 }
