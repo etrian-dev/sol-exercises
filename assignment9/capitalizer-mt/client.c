@@ -11,6 +11,8 @@
  * ognuno dei quali invia una o piu' richieste al server multithreaded.
  */
 
+// my headers
+#include <util.h>
 // unix/linux syscalls
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -23,17 +25,6 @@
 #include <errno.h>
 #include <stdlib.h>
 
-// macro to wipe out debug prints from release executables
-#if defined(DEBUG)
-#define DBG(X) X
-#else
-#define DBG(X)
-#endif
-
-// known path to create the socket file
-#define ADDR "./sock"
-// max string lenght to send trough the socket. Just for easiness of allocation
-#define MSG_MAXLEN 100
 // define maximum number of connection tries done by the client before giving up
 #define MAXTRIES 100
 
@@ -65,16 +56,22 @@ int main(int argc, char **argv) {
 
     // connected to socket: read strings (expressions) and send them to the server
     // until "quit" is inputted
-    char *expression = calloc(MSG_MAXLEN, sizeof(char));
-    if(!expression) {perror("Alloc error"); exit(-1);}
+    char *expression = calloc(BUFSZ, sizeof(char));
+    if(!expression) {
+        perror("Alloc error");
+        exit(-1);
+    }
 
-    char *reply = malloc(MSG_MAXLEN * sizeof(char));
-    if(!reply) {perror("Alloc error");exit(-1);}
+    char *reply = malloc(BUFSZ * sizeof(char));
+    if(!reply) {
+        perror("Alloc error");
+        exit(-1);
+    }
 
     int mlen; // stores the lenght of the expression to be sent (return value of read())
     do {
         // read a new expression from stdin
-        mlen = read(0, expression, MSG_MAXLEN);
+        mlen = read(0, expression, BUFSZ);
         if(mlen == -1) {
             DBG(printf("[CLIENT %d]: Cannot read from stdin -> quitting: %s\n", getpid(), strerror(errno)));
             write(mysock, "quit", 5);
@@ -90,7 +87,7 @@ int main(int argc, char **argv) {
         }
 
         // wait for the reply from the server using a blocking read() on the socket
-        int res = read(mysock, reply, MSG_MAXLEN);
+        int res = read(mysock, reply, BUFSZ);
         if(res == -1) {
             perror("Cannot obtain result from socket");
             exit(-1);

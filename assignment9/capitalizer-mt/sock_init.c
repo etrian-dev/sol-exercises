@@ -32,7 +32,7 @@ int sock_init(char *addr, size_t len) {
 
     if(bind(sock_fd, (struct sockaddr *)&address, sizeof(address)) == -1) {
         printf("Cannot bind socket %d to address \"%s\": %s\n", sock_fd, addr, strerror(errno));
-        return -;
+        return -1;
     }
 
     // now that the socket is binded to some file, make it listen for incoming connections

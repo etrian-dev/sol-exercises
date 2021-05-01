@@ -11,11 +11,11 @@
 #endif
 
 // known path to create the socket file
-#define ADDR "./sock"
+#define ADDR "sock"
 
 // maximum socket path lenght
 #define PATHLEN_MAX 108
 
-#define READ_BUFSZ 1000
+#define BUFSZ 1000
 
 #endif
