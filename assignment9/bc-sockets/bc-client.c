@@ -26,7 +26,7 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-    // create a socket to connect to the serv_sock
+    // create a socket to connect to serv_sock
     int serv_sock;
     if((serv_sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         DBG(printf("[CLIENT %d]: Cannot create socket: %s\n", getpid(), strerror(errno)));
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     }
 
     // connected to socket: read expressions from stdin and send them to the serv_sock
-    // until "quit" is specified
+    // until "quit\n" is read
     char *expression = calloc(BUFSZ, sizeof(char));
     if(!expression) {perror("Alloc error"); exit(-1);}
 
@@ -98,7 +98,9 @@ int main(int argc, char **argv) {
     // then cleanup
     free(expression);
     free(reply);
-    close(serv_sock);
+    if(close(serv_sock) == -1) {
+        perror("Failed closing the socket");
+    }
     
     return 0;
 }
