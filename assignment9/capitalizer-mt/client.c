@@ -7,8 +7,8 @@
  * (modello “un thread per connessione”) e quindi termina la sua esecuzione quando
  * il client chiude la connessione.
  *
- * Per testare il programma implementare uno script bash che lancia N>10 clients
- * ognuno dei quali invia una o piu' richieste al server multithreaded.
+ * Per testare il programma, lanciare piu' processi client ognuno dei quali invia una
+ * o piu' richieste al server multithreaded.
  */
 
 // my headers
@@ -97,9 +97,10 @@ int main(int argc, char **argv) {
         }
         else {
             // print the result of the expression to stdout
-            printf("Risultato: %s\n", reply);
+            write(1, "Risultato: ", 12);
+            write(1, reply, res);
         }
-    } while(strncmp(expression, "quit", 4) != 0);
+    } while(strncmp(expression, "quit\n", mlen) != 0);
     // if "quit" was the expression, then the client exits from the loop and terminates
 
     // notify on stdout that the connection ended

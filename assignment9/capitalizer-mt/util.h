@@ -3,6 +3,8 @@
 #ifndef UTIL_H_INCLUDED
 #define UTIL_H_INCLUDED
 
+#include <stddef.h>
+
 // macro to wipe out debug prints from release executables
 #if defined(DEBUG)
 #define DBG(X) X
@@ -17,5 +19,11 @@
 #define PATHLEN_MAX 108
 
 #define BUFSZ 1000
+
+// function used to initialize a socket for the server
+int sock_init(char *address, size_t len);
+
+// this is the function executed by worker threads spawned by this thread
+void *work(void *client_sock);
 
 #endif

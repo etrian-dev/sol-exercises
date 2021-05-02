@@ -13,7 +13,7 @@
 
 // my header
 #include <util.h>
-// threads header
+// posix threads header
 #include <pthread.h>
 // syscall headers
 #include <sys/types.h>
@@ -27,13 +27,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
-// function used to initialize a socket for the server
-int sock_init(char *address, size_t len);
-// this is the function executed by worker threads spawned by this thread
-void *work(void *client_sock);
-
 int main(int argc, char **argv) {
-    // first try to unlink the socket
+    // first try to unlink the socket to remove it from the fs if it's already there
     unlink(ADDR);
 
     // create the socket and bind it to a known address
@@ -42,10 +37,21 @@ int main(int argc, char **argv) {
         DBG(printf("[SERVER %d]: Cannot create server socket: %s\n", getpid(), strerror(errno)));
         return 1;
     }
+    
+    // sets attribute detached on thread creation just to avoid an additional call
+    pthread_attr_t attributes;
+    if(pthread_attr_init(&attributes) != 0) {
+        perror("Failed to initialize thread attr");
+        exit(-1);
+    }
+    if(pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED) != 0) {
+        perror("Failed to set spawned threads to DETACHED");
+        exit(-1);
+    }
 
-    // this thread receives the socket where the connections are coming as a parameter
-    // for each accepted connection, a detached thread is spawned and it loops
-    // keeps trying to accept any incoming connections
+    // this thread accepts connections on the socket just created
+    // for each accepted connection, a detached thread is spawned
+    // Meanwhile, this thread keeps trying to accept other incoming connections
     while(1) {
         int client_sock;
         if((client_sock = accept(sock_fd, NULL, NULL)) == -1) {
@@ -58,16 +64,13 @@ int main(int argc, char **argv) {
         // a thread is spawned to handle the connection on client_sock
         pthread_t worker;
         // the worker thread needs the socket used by the accepted client to read & write
-        if(pthread_create(&worker, NULL, work, (void*)client_sock) == -1) {
+        if(pthread_create(&worker, &attributes, work, (void*)client_sock) == -1) {
             DBG(printf("[ACCEPTOR THREAD %ld]: Cannot spawn worker thread: %s", pthread_self(), strerror(errno)));
         }
-        // the thread just created is detatched, so that it can terminate indipendently of
-        // this thread
-        if(pthread_detach(worker) == -1) {
-            DBG(printf("[ACCEPTOR THREAD %ld]: Cannot detach worker thread: %s", pthread_self(), strerror(errno)));
-        }
-
-        // keep trying to accept connections
+        // the thread is created as detatched, so that it can terminate indipendently of any thread
+        // and its resources will be freed
+        
+        // keep trying to accept connections...
     }
     
     return 0;
