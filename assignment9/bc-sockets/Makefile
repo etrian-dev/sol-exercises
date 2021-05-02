@@ -1,15 +1,23 @@
 CC = gcc
 CFLAGS = -g -Wall -pedantic -std=c99
+HEADERS = -I .
 
 DBG = -DDEBUG
 
-CLIENT = bc-client
-SERVER = bc-serv
+CLIENT = bcclient.out
+SERVER = bcserv.out
 
-.PHONY: all
+.PHONY: all debug clean cleanall
 
 all: $(CLIENT) $(SERVER)
-$(CLIENT):
-	$(CC) $(CFLAGS) -o $(CLIENT).out $(CLIENT).c $(DBG)
-$(SERVER):
-	$(CC) $(CFLAGS) -o $(SERVER).out $(SERVER).c child.c $(DBG)
+debug: bc-client.c bc-serv.c child.c
+	$(CC) $(CFLAGS) $(HEADERS) -o $(CLIENT) bc-client.c $(DBG)
+	$(CC) $(CFLAGS) $(HEADERS) -o $(SERVER) bc-serv.c child.c $(DBG)
+$(CLIENT): bc-client.c
+	$(CC) $(CFLAGS) $(HEADERS) -o $(CLIENT) $<
+$(SERVER): bc-serv.c child.c
+	$(CC) $(CFLAGS) $(HEADERS) -o $(SERVER) $^
+clean: $(CLIENT) $(SERVER)
+	-rm -fr $(CLIENT) $(SERVER)
+cleanall: clean
+	-rm -fr sock

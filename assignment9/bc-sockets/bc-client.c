@@ -11,7 +11,8 @@
  * dall'utente che fa chiudere la connessione con il serv_sock. Il serv_sock si rimette in
  * attesa di ricevere una nuova connessione.
  */
-
+// my header
+#include <util.h>
 // headers for sockets and syscalls
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -23,20 +24,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
-
-// macro to wipe out debug prints from release executables
-#if defined(DEBUG)
-#define DBG(X) X
-#else
-#define DBG(X)
-#endif
-
-// the socket shared by the client and the serv_sock (hardcoded)
-#define SOCKET "sock"
-// max lenght of an expression that can be sent trough the socket
-#define MSG_MAXLEN 100
-// define maximum number of connection tries done by the client before giving up
-#define MAXTRIES 100
 
 int main(int argc, char **argv) {
     // create a socket to connect to the serv_sock
@@ -69,35 +56,40 @@ int main(int argc, char **argv) {
 
     // connected to socket: read expressions from stdin and send them to the serv_sock
     // until "quit" is specified
-    char *expression = calloc(MSG_MAXLEN, sizeof(char));
+    char *expression = calloc(BUFSZ, sizeof(char));
     if(!expression) {perror("Alloc error"); exit(-1);}
 
-    char *reply = malloc(MSG_MAXLEN * sizeof(char));
+    char *reply = calloc(BUFSZ, sizeof(char));
     if(!reply) {perror("Alloc error");exit(-1);}
 
     int mlen; // stores the lenght of the expression to be sent (return value of read())
     do {
         // read a new expression from stdin
-        mlen = read(0, expression, MSG_MAXLEN);
+        mlen = read(0, expression, BUFSZ);
         if(mlen == -1) {
-            DBG(printf("[CLIENT %d]: Cannot read expression from stdin -> quitting: %s\n", getpid(), strerror(errno)));
-            write(serv_sock, "quit", 5);
+            DBG(printf("[CLIENT %d]: Cannot read expression from stdin: QUITTING: %s\n", getpid(), strerror(errno)));
             break;
         }
 
-        int ret;
-        // write the expression to the socket
-        ret = write(serv_sock, expression, mlen);
-        printf("Write expr: %d\n", ret);
+        // write the expression just read to the socket
+        if(write(serv_sock, expression, mlen) == -1) {
+            DBG(printf("[CLIENT %d]: Failed to write on socket: %s\n", getpid(), strerror(errno)));
+            continue; // should not wait with a blocking read if the op is not sent at all
+        }
 
         // wait for the reply from the serv_sock using a blocking read() on the socket
-        ret = read(serv_sock, reply, MSG_MAXLEN);
-        printf("Read res: %d\n", ret);
+        int len;
+        if((len = read(serv_sock, reply, BUFSZ)) == -1) {
+            DBG(printf("[CLIENT %d]: Failed to read result from socket: %s\n", getpid(), strerror(errno)));
+            continue; // should not print the result: the buffer might be garbage now
+        }
 
         // print the result of the expression to stdout
-        printf("Risultato: %s\n", reply);
-
-    } while(strncmp(expression, "quit", 4) != 0);
+        if(len > 0) {
+            write(1, "Risultato: ", 12);
+            write(1, reply, len);
+        }
+    } while(strncmp(expression, "quit\n", mlen) != 0);
     // if "quit" was the expression, then the client exits from the loop and terminates
 
     // notify on stdout that the connection ended
