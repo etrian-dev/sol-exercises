@@ -18,4 +18,7 @@
 
 #define BUFSZ 1000
 
+// define maximum number of connection tries done by the client before giving up
+#define MAXTRIES 100
+
 #endif

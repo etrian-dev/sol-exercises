@@ -2,3 +2,5 @@
 *.out
 #ignore .vscode dirs
 .vscode/
+#ignore KDevelop project files
+.kdev4
