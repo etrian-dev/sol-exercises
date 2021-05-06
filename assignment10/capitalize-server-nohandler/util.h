@@ -15,10 +15,8 @@
 
 // global variables used to pass things indirectly to the signal handler
 volatile sig_atomic_t server_sock;
-volatile sig_atomic_t *pbuf;
 
-void ingnore_pipe(void);
-void *handle_termsig(void *unused);
+void ignore_pipe(void);
 
 // known path to create the socket file
 #define ADDR "sock"
