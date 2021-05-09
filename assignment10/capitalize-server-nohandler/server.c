@@ -17,13 +17,16 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-    pthread_mutex_init(&mux, NULL);
+    if(pthread_detach(pthread_self()) != 0) {
+        DBG(printf("[SERVER %d]: Cannot detach the main thread: %s\n", getpid(), strerror(errno)));
+        return 1;
+    }
 
-    unlink(ADDR);
-
+    // this structure holds all the TIDs of the threads spawned, including the main thread
+    // and exluding the thread that handles termination
     struct tpool *all_threads = malloc(sizeof(struct tpool));
     if(!all_threads) {
-        DBG(printf("[SERVER %d]: Cannot create array of TIDs: %s\n", getpid(), strerror(errno)));
+        DBG(printf("[SERVER %d]: Cannot create thread info structure: %s\n", getpid(), strerror(errno)));
         return 1;
     }
     all_threads->pool = malloc(sizeof(pthread_t));
@@ -31,23 +34,25 @@ int main(int argc, char **argv) {
         DBG(printf("[SERVER %d]: Cannot create array of TIDs: %s\n", getpid(), strerror(errno)));
         return 1;
     }
-    all_threads->pool[0] = pthread_self(); // this thread as well
+    all_threads->pool[0] = pthread_self(); // the main thread is always the first in the array
     all_threads->poolsize = 1;
-    // array to be filled with all thread ids except
-    //the handler thread created below
 
+    // Set attributes to create a detached thread (the handler thread)
     pthread_attr_t attrs;
     pthread_attr_init(&attrs);
     pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
 
     // spawn the thread who handles all the termination signals
-    pthread_t term_handler; // thread who handles the process termination signals
+    // created as detached because it's not joined by any other thread
+    pthread_t term_handler;
     if(pthread_create(&term_handler, &attrs, handle_termsig, (void*)all_threads) != 0) {
-        DBG(printf("[SERVER %d]: Cannot create termination handler thread. Aborting: %s\n", getpid(), strerror(errno)));
+        DBG(printf("[SERVER %d]: Cannot create termination handler thread: %s\n", getpid(), strerror(errno)));
         return 1;
     }
+    // destroy attrs
+    pthread_attr_destroy(&attrs);
 
-    // block all signals
+    // block all signals sent to this thread (inherited by all threads spawned by this one)
     sigset_t masked_signals;
     if(sigfillset(&masked_signals) == -1) {
         perror("Cannot fill the signal mask");
@@ -60,9 +65,7 @@ int main(int argc, char **argv) {
     // then install the signal handler to ignore SIGPIPE
     ignore_pipe();
 
-    // DO THINGS: all threads spawned from here and their children will inherit the signal mask
-    // that is, all thread spawned by main (workers)
-    // WILL HAVE ALL SIGNALS MASKED
+    // Set up a socket to listen for connections
 
     // create the socket and bind it to a known address
     if((server_sock = sock_init(ADDR, strlen(ADDR))) == -1) {
@@ -71,24 +74,15 @@ int main(int argc, char **argv) {
     }
 
     // this thread accepts connections on the socket just created
-    // for each accepted connection, a detached thread is spawned
+    // for each accepted connection, a worker thread is spawned
     // Meanwhile, this thread keeps trying to accept other incoming connections
-    pthread_mutex_lock(&mux);
-    term = 0;
-    pthread_mutex_unlock(&mux);
     while(1) {
-        pthread_mutex_lock(&mux);
-        if(term) {break;}
-        pthread_mutex_unlock(&mux);
-
         int client_sock;
         if((client_sock = accept(server_sock, NULL, NULL)) == -1) {
             DBG(printf(
-                "[ACCEPTOR THREAD %ld]: Connection requested to listening socket %d REFUSED: %s\n",
-                pthread_self(), server_sock, strerror(errno)));
-            pthread_mutex_lock(&mux);
-            if(term) {break;}
-            pthread_mutex_unlock(&mux);
+                "[ACCEPTOR THREAD %ld]: Connection requested to listening socket %d REFUSED: %d\n",
+                pthread_self(), server_sock, errno));
+            break;
         }
 
         // All went well: notify it if debug is on
@@ -97,7 +91,7 @@ int main(int argc, char **argv) {
         // a thread is spawned to handle the connection on client_sock
         pthread_t worker;
         // the worker thread needs the socket used by the accepted client to read & write
-        if(pthread_create(&worker, &attrs, work, (void*)client_sock) == -1) {
+        if(pthread_create(&worker, NULL, work, (void*)client_sock) == -1) {
             DBG(printf("[ACCEPTOR THREAD %ld]: Cannot spawn worker thread: %s", pthread_self(), strerror(errno)));
         }
 
@@ -108,7 +102,6 @@ int main(int argc, char **argv) {
 
         // keep trying to accept connections...
     }
-    pthread_attr_destroy(&attrs);
 
     return 0;
 }

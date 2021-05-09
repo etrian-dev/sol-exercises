@@ -3,7 +3,7 @@ CFLAGS = -g -Wall -pedantic -std=c99
 HEADERS = -I .
 LIBS = -lpthread
 
-MACROS = -D_POSIX_C_SOURCE=199506L -DDEBUG
+MACROS = -D_POSIX_C_SOURCE=199506L -DNDEBUG
 
 CLIENT = client.out
 SERVER = server.out

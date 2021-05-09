@@ -13,9 +13,6 @@
 #define DBG(X)
 #endif
 
-pthread_mutex_t mux;
-int term;
-
 // global variables used to pass things indirectly to the signal handler
 volatile sig_atomic_t server_sock;
 
