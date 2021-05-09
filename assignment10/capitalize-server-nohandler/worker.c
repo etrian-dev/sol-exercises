@@ -34,7 +34,6 @@ void *work(void *client_sock) {
         exit(-1);
     }
 
-    pbuf = str;
 
     int msglen = read((int)client_sock, str, BUFSZ);
     if(msglen == -1) {

@@ -22,6 +22,14 @@ int main(int argc, char **argv) {
 
     // DO THINGS
 
+    unlink(ADDR);
+
+    // detach this thread
+    if(pthread_detach(pthread_self()) != 0) {
+        DBG(printf("[SERVER %d]: Cannot detach main thread: %s\n", getpid(), strerror(errno)));
+        exit(-1);
+    }
+
     // create the socket and bind it to a known address
     int sock_fd;
     if((sock_fd = sock_init(ADDR, strlen(ADDR))) == -1) {

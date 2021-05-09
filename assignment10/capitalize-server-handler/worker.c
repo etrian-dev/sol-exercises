@@ -46,7 +46,7 @@ void *work(void *client_sock) {
         capitalize(str, msglen - 1);
 
         // now send the capitalized string trough the socket to the client
-        if(write((int)client_sock, str, msglen) == -1) {
+        if(writen((int)client_sock, str, msglen) == -1) {
             DBG(printf("[WORKER %ld]: Sending result to the client failed: %s\n", pthread_self(), strerror(errno)));
         }
 

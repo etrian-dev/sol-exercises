@@ -68,6 +68,7 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
+    int sock_open = 1; // flag to indicate that the socket is still open, so data can be sent trough it
     int mlen; // stores the lenght of the expression to be sent (return value of read())
     do {
         // read a new expression from stdin
@@ -81,7 +82,7 @@ int main(int argc, char **argv) {
         DBG(printf("[CLIENT %d]: sent \"%s\" from socket %d\n", getpid(), expression, mysock));
 
         // write the expression to the socket
-        if(write(mysock, expression, mlen) == -1) {
+        if(writen(mysock, expression, mlen) == -1) {
             DBG(printf("[CLIENT %d]: Cannot write to the socket -> exiting: %s\n", getpid(), strerror(errno)));
             exit(-1);
         }
@@ -90,17 +91,14 @@ int main(int argc, char **argv) {
         int res = read(mysock, reply, BUFSZ);
         if(res == -1) {
             perror("Cannot obtain result from socket");
-            exit(-1);
-        }
-        else if(res == 0) {
-            DBG(printf("[CLIENT %d]: Socket closed -> terminate\n", getpid()));
+            sock_open = 0;
         }
         else {
             // print the result of the expression to stdout
-            write(1, "Risultato: ", 12);
-            write(1, reply, res);
+            writen(1, "Risultato: ", 12);
+            writen(1, reply, res);
         }
-    } while(strncmp(expression, "quit\n", mlen) != 0);
+    } while(sock_open && strncmp(expression, "quit\n", mlen) != 0);
     // if "quit" was the expression, then the client exits from the loop and terminates
 
     // notify on stdout that the connection ended

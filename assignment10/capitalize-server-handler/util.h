@@ -4,6 +4,7 @@
 #define UTIL_H_INCLUDED
 
 #include <stddef.h>
+#include <unistd.h> // for ssize_t
 #include <signal.h> // for the definition of the "sig_atomic_t" type
 
 // macro to wipe out debug prints from release executables
@@ -13,12 +14,18 @@
 #define DBG(X)
 #endif
 
+/* Read "n" bytes from a descriptor */
+ssize_t readn(int fd, void *ptr, size_t n);
+/* Write "n" bytes to a descriptor */
+ssize_t writen(int fd, void *ptr, size_t n);
+
 // global variables used to pass things indirectly to the signal handler
 volatile sig_atomic_t server_sock;
-volatile sig_atomic_t *pbuf;
 
+// functions related to signal handlers
+void install_sighandlers(void);
 void ingnore_pipe(void);
-void *handle_termsig(void *unused);
+void term_handler(int signal);
 
 // known path to create the socket file
 #define ADDR "sock"

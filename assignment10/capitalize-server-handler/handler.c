@@ -30,7 +30,6 @@ void install_sighandlers(void) {
         exit(-1);
     }
 
-
     // now install all signal handlers for the blocked signals
     struct sigaction ignore_pipe;
     memset(&ignore_pipe, 0, sizeof(ignore_pipe)); // zeroed to be safe
@@ -82,17 +81,18 @@ void term_handler(int signal) {
     // Notifies on the terminal the termination signal
     // TODO: Maybe it's not a good thing
     write(1, "Received signal\n", 17);
-    // this handler will unlink the socket and close it
+    // unlink the socket and close it
     if(unlink(ADDR) == -1) {
         write(1, "Cannot unlink socket", 21);
         _exit(-1);
     }
-    // the socket is stored in this global variable defined in util.h
+    // the socket is stored in this global variable (of type volatile sig_atomic_t)
+    // defined in util.h
     if(close((int)server_sock) == -1) {
         write(1, "Server socket cannot be closed\n", 50);
         _exit(-1);
     }
 
-    // esco col numero di segnale ricevuto
+    // exit with the received signal as a code
     _exit(signal);
 }

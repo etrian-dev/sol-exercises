@@ -13,10 +13,20 @@
 #define DBG(X)
 #endif
 
+pthread_mutex_t mux;
+int term;
+
 // global variables used to pass things indirectly to the signal handler
 volatile sig_atomic_t server_sock;
 
 void ignore_pipe(void);
+
+struct tpool {
+    pthread_t *pool;
+    size_t poolsize;
+};
+
+void *handle_termsig(void *all_threads);
 
 // known path to create the socket file
 #define ADDR "sock"

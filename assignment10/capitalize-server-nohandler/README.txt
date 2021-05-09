@@ -28,6 +28,8 @@ volatile sig_atomic_t e deve usare solo chiamate asynchronous-signal-safe
 con il comando valgrind –leak-check=full e verficare che non ci siano messaggi di
 errore all'uscita dopo aver inviato un segnale di terminazione al termine del test.
 
+
+
 Modificare l'Esercizio 2 in modo da gestire i segnali nel server in modo sincrono
 utilizzando un thread dedicato (non devono essere installati signal-handlers – se non
 per ignorare SIGPIPE) e la chiamata di libreria sigwait. Fare attenzione a bloccare
