@@ -36,23 +36,35 @@ void *work(void *client_sock) {
 
     int msglen = read((int)client_sock, str, BUFSZ);
     if(msglen == -1) {
-        perror("read() error. Exiting");
-        exit(-1);
+        if(errno != EINTR) {
+            perror("read() error. Exiting");
+            exit(-1);
+        }
     }
 
-    while(strncmp(str, "quit\n", msglen) != 0) {
+    while(!terminate && strncmp(str, "quit\n", msglen) != 0) {
         DBG(printf("[WORKER %ld]: Read str \"%s\" from client on socket %d\n", pthread_self(), str, (int)client_sock));
 
         capitalize(str, msglen - 1);
 
         // now send the capitalized string trough the socket to the client
         if(writen((int)client_sock, str, msglen) == -1) {
+            if(errno == EINTR) {
+                if(terminate) {
+                    break;
+                }
+            }
             DBG(printf("[WORKER %ld]: Sending result to the client failed: %s\n", pthread_self(), strerror(errno)));
         }
 
         // then read another string and loop
         msglen = read((int)client_sock, str, BUFSZ);
         if(msglen == -1) {
+            if(errno == EINTR) {
+                if(terminate) {
+                    break;
+                }
+            }
             DBG(printf("[WORKER %ld]: read() error. Exiting\n", pthread_self()));
             exit(-1);
         }

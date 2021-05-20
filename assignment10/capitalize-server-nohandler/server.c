@@ -17,11 +17,6 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-    if(pthread_detach(pthread_self()) != 0) {
-        DBG(printf("[SERVER %d]: Cannot detach the main thread: %s\n", getpid(), strerror(errno)));
-        return 1;
-    }
-
     // this structure holds all the TIDs of the threads spawned, including the main thread
     // and exluding the thread that handles termination
     struct tpool *all_threads = malloc(sizeof(struct tpool));
@@ -34,8 +29,7 @@ int main(int argc, char **argv) {
         DBG(printf("[SERVER %d]: Cannot create array of TIDs: %s\n", getpid(), strerror(errno)));
         return 1;
     }
-    all_threads->pool[0] = pthread_self(); // the main thread is always the first in the array
-    all_threads->poolsize = 1;
+    all_threads->poolsize = 0;
 
     // Set attributes to create a detached thread (the handler thread)
     pthread_attr_t attrs;

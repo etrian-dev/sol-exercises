@@ -19,8 +19,8 @@ ssize_t readn(int fd, void *ptr, size_t n);
 /* Write "n" bytes to a descriptor */
 ssize_t writen(int fd, void *ptr, size_t n);
 
-// global variables used to pass things indirectly to the signal handler
-volatile sig_atomic_t server_sock;
+// global flag to signal to detached threads to terminate
+volatile sig_atomic_t terminate;
 
 // functions related to signal handlers
 void install_sighandlers(void);

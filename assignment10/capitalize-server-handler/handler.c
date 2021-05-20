@@ -31,17 +31,17 @@ void install_sighandlers(void) {
     }
 
     // now install all signal handlers for the blocked signals
-    struct sigaction ignore_pipe;
-    memset(&ignore_pipe, 0, sizeof(ignore_pipe)); // zeroed to be safe
+    struct sigaction handler;
+    memset(&handler, 0, sizeof(handler)); // zeroed to be safe
     // SIGPIPE must be ignored
-    ignore_pipe.sa_handler = SIG_IGN; // ignores the signal
-    if(sigaction(SIGPIPE, &ignore_pipe, NULL) == -1) {
+    handler.sa_handler = SIG_IGN; // ignores the signal
+    if(sigaction(SIGPIPE, &handler, NULL) == -1) {
         perror("Cannot ignore SIGPIPE");
         exit(-1);
     }
 
-    // set the signal mask to mask only to the termination signals, for which one
-    // signal handler will be installed
+    // set the signal mask bits corresponding to the termination signals
+    // SIGINT, SIGTERM, SIGHUP for which the same signal handler will be installed
     if(sigemptyset(&masked_signals) == -1) {
         perror("Cannot empty the signal mask");
         exit(-1);
@@ -53,13 +53,10 @@ void install_sighandlers(void) {
         perror("Signal mask cannot be set properly");
         exit(-1);
     }
-    struct sigaction handler;
+
     memset(&handler, 0, sizeof(handler)); // zeroed to be safe
-    // other termination signals are set to one signal handler (term_handler)
-    // so all other termination signals specified in the mask should be masked
-    // during that signal handler
     handler.sa_handler = term_handler;
-    handler.sa_mask = masked_signals; // the mask contains only the termination signals handled by this handler
+    handler.sa_mask = masked_signals; // the mask contains all the termination signals handled by this handler
     if(	sigaction(SIGINT, &handler, NULL) == -1
             || sigaction(SIGQUIT, &handler, NULL) == -1
             || sigaction(SIGTERM, &handler, NULL) == -1
@@ -70,29 +67,19 @@ void install_sighandlers(void) {
     }
 
     // now all signal handlers are registered, so restore the old set of masked signals
-    if(pthread_sigmask(SIG_SETMASK, &oldmask, NULL) != 0) {
+    if(pthread_sigmask(SIG_UNBLOCK, &masked_signals, NULL) != 0) {
         perror("Error in restoring the old blocked signals mask");
         exit(-1);
     }
 }
 
-// signal holds the received signal
+// This is the termination signal(s) handler. The specific signal received is the parameter
 void term_handler(int signal) {
-    // Notifies on the terminal the termination signal
+    // Notifies on the terminal that the signal was received
     // TODO: Maybe it's not a good thing
-    write(1, "Received signal\n", 17);
-    // unlink the socket and close it
-    if(unlink(ADDR) == -1) {
-        write(1, "Cannot unlink socket", 21);
-        _exit(-1);
-    }
-    // the socket is stored in this global variable (of type volatile sig_atomic_t)
-    // defined in util.h
-    if(close((int)server_sock) == -1) {
-        write(1, "Server socket cannot be closed\n", 50);
-        _exit(-1);
-    }
+
+    // signal to all threads to terminate through a global variable
+    terminate = 1;
 
     // exit with the received signal as a code
-    _exit(signal);
 }

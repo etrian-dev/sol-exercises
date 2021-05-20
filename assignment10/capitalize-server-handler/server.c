@@ -1,5 +1,3 @@
-// server capitalizzazione multithreaded con gestione segnali tramite signal handlers
-
 // my header
 #include <util.h>
 // posix threads header
@@ -16,19 +14,10 @@
 #include <errno.h>
 #include <stdlib.h>
 
+// multithreaded server for capitalization. Termination using signal handlers
 int main(int argc, char **argv) {
     // installs signal handlers
     install_sighandlers();
-
-    // DO THINGS
-
-    unlink(ADDR);
-
-    // detach this thread
-    if(pthread_detach(pthread_self()) != 0) {
-        DBG(printf("[SERVER %d]: Cannot detach main thread: %s\n", getpid(), strerror(errno)));
-        exit(-1);
-    }
 
     // create the socket and bind it to a known address
     int sock_fd;
@@ -36,10 +25,6 @@ int main(int argc, char **argv) {
         DBG(printf("[SERVER %d]: Cannot create server socket: %s\n", getpid(), strerror(errno)));
         return 1;
     }
-
-    // the socket is copied into a global volatile sig_atomic_t variable
-    // be closed by the signal handler
-    server_sock = (sig_atomic_t)sock_fd;
 
     // sets attribute detached on thread creation just to avoid an additional call
     pthread_attr_t attributes;
@@ -52,13 +37,27 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
+    terminate = 0;
+
     // this thread accepts connections on the socket just created
     // for each accepted connection, a detached thread is spawned
     // Meanwhile, this thread keeps trying to accept other incoming connections
-    while(1) {
+    int exit_code = 0;
+    while(!terminate) {
         int client_sock;
-        if((client_sock = accept(sock_fd, NULL, NULL)) == -1) {
-            DBG(printf("[ACCEPTOR THREAD %ld]: Connection requested to listening socket %d REFUSED: %s\n", pthread_self(), sock_fd, strerror(errno)));
+        if(!terminate && (client_sock = accept(sock_fd, NULL, NULL)) == -1) {
+            if(errno == EINTR) {
+                // accept was interrupted
+                if(terminate) {
+                    // the signal handler was called and it set terminate, so exit the loop
+                    break;
+                }
+            }
+            else {
+                // some other accept error
+                DBG(printf("[ACCEPTOR THREAD %ld]: Connection requested to listening socket %d REFUSED: %s\n", pthread_self(), sock_fd, strerror(errno)));
+                exit_code = errno;
+            }
         }
 
         // All went well: notify it if debug is on
@@ -76,5 +75,14 @@ int main(int argc, char **argv) {
         // keep trying to accept connections...
     }
 
-    return 0;
+     // unlink the socket and close it
+    if(unlink(ADDR) == -1) {
+        write(1, "Cannot unlink socket", 21);
+    }
+    // the socket is stored in this global variable (of type volatile sig_atomic_t)
+    if(close(sock_fd) == -1) {
+        write(1, "Server socket cannot be closed\n", 50);
+    }
+
+    return exit_code;
 }
